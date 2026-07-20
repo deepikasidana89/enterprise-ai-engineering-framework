@@ -25,8 +25,12 @@ def scan(path: Path) -> None:
     try:
         loader = RepositoryLoader()
         context = loader.load(path)
-        typer.echo(f"Loaded repository: {context.project_name}")
-        typer.echo("Scanning is not implemented in Phase 1.")
+        typer.echo("Repository loaded successfully.")
+        typer.echo("")
+        typer.echo(f"Project: {context.project_name}")
+        typer.echo(f"Path: {context.root_path}")
+        typer.echo("")
+        typer.echo("Repository scanning is not implemented in Phase 1.")
         raise typer.Exit(code=0)
     except InvalidRepositoryPathError as exc:
         typer.echo(f"Error: {exc}")

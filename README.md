@@ -2,7 +2,23 @@
 
 > EARF is an open-source assessment framework designed to inspect AI application repositories for evidence of enterprise engineering practices across reliability, safety, evaluation, observability, privacy, governance, and operations.
 
-Phase 1 status: Python package skeleton and CLI (no scanning or rules implemented).
+Current Status:
+In-Progress
+
+Current Version:
+0.1.0-dev
+
+Completed:
+✓ Package architecture
+✓ CLI
+✓ Domain models
+
+Not yet implemented:
+
+- Rule loading
+- Repository scanning
+- Scoring
+- Reporting
 
 ## Vision
 

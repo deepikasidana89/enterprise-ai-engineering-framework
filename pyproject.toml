@@ -6,11 +6,14 @@ build-backend = "setuptools.build_meta"
 name = "earf"
 version = "0.1.0-dev"
 description = "Enterprise AI Readiness Framework (Phase 1 skeleton)"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["typer>=0.10.0"]
 
 [project.urls]
-Home = "https://example.org/earf"
+Homepage = "https://github.com/deepikasidana89/enterprise-ai-engineering-framework"
+Repository = "https://github.com/deepikasidana89/enterprise-ai-engineering-framework"
+Issues = "https://github.com/deepikasidana89/enterprise-ai-engineering-framework/issues"
 
 [project.scripts]
 earf = "earf.cli:main"

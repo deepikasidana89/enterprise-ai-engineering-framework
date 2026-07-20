@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Optional
 
-from ..models import Severity
+from ..models import Metadata, Severity
 
 
 @dataclass(frozen=True)
@@ -15,4 +15,4 @@ class RuleDefinition:
     severity: Severity
     version: str
     applicability: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None
+    metadata: Optional[Metadata] = None

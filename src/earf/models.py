@@ -3,7 +3,19 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional, TypeAlias
+
+MetadataValue: TypeAlias = (
+    str
+    | int
+    | float
+    | bool
+    | None
+    | list["MetadataValue"]
+    | dict[str, "MetadataValue"]
+)
+
+Metadata: TypeAlias = dict[str, MetadataValue]
 
 
 class ScanStatus(Enum):
@@ -46,7 +58,7 @@ class RepositoryContext:
     root_path: Path
     project_name: str
     files: List[RepositoryFile] = field(default_factory=list)
-    metadata: Dict[str, str] = field(default_factory=dict)
+    metadata: Metadata = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -55,7 +67,7 @@ class Evidence:
     source: str
     description: str
     location: Optional[str] = None
-    metadata: Dict[str, str] = field(default_factory=dict)
+    metadata: Metadata = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -67,7 +79,7 @@ class RuleDefinition:
     severity: Severity
     version: str
     applicability: Optional[str] = None
-    metadata: Dict[str, str] = field(default_factory=dict)
+    metadata: Metadata = field(default_factory=dict)
 
 
 @dataclass
@@ -81,9 +93,10 @@ class RuleResult:
     error_message: Optional[str] = None
 
     def __post_init__(self) -> None:
-        if not (0.0 <= self.confidence <= 1.0):
-            raise ValueError("confidence must be between 0.0 and 1.0")
-
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError(
+                f"confidence must be between 0.0 and 1.0, got {self.confidence}"
+            )
 
 @dataclass
 class CategoryScore:
@@ -103,4 +116,4 @@ class AssessmentReport:
     readiness_level: Optional[str] = None
     category_scores: List[CategoryScore] = field(default_factory=list)
     rule_results: List[RuleResult] = field(default_factory=list)
-    metadata: Dict[str, str] = field(default_factory=dict)
+    metadata: Metadata = field(default_factory=dict)

@@ -41,3 +41,12 @@ def test_evidence_repository_add_and_filter() -> None:
     assert files[0].source == "sc1"
     by_source = repo.filter_by_source("sc2")
     assert by_source and by_source[0].description == "d2"
+
+
+def test_evidence_repository_clear() -> None:
+    repo = EvidenceRepository()
+    e1 = Evidence(evidence_type=EvidenceType.FILE, source="sc1", description="d1")
+    repo.add(e1)
+    assert repo.all()
+    repo.clear()
+    assert repo.all() == []

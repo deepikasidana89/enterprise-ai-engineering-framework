@@ -25,10 +25,24 @@ def test_scan_valid(tmp_path: Path) -> None:
     d.mkdir()
     result = runner.invoke(app, ["scan", str(d)])
     assert result.exit_code == 0
-    assert "Loaded repository: proj" in result.stdout
+    assert "Repository loaded successfully." in result.stdout
+    assert "Project: proj" in result.stdout
+    assert f"Path: {d.resolve()}" in result.stdout
+    assert "Repository scanning is not implemented in Phase 1." in result.stdout
 
 
 def test_scan_invalid() -> None:
     result = runner.invoke(app, ["scan", "no-such-path"])
     assert result.exit_code != 0
     assert "Error:" in result.stdout
+    assert "Traceback" not in result.stdout
+
+
+def test_scan_file_path_invalid(tmp_path: Path) -> None:
+    f = tmp_path / "file.txt"
+    f.write_text("hi")
+    result = runner.invoke(app, ["scan", str(f)])
+    assert result.exit_code != 0
+    assert "Error:" in result.stdout
+    assert "Path is not a directory" in result.stdout
+    assert "Traceback" not in result.stdout
