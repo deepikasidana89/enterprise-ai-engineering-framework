@@ -1,6 +1,8 @@
 # Enterprise AI Readiness Framework (EARF)
 
-> A practical framework for assessing, designing, and operating production-ready Enterprise AI systems.
+> EARF is an open-source assessment framework designed to inspect AI application repositories for evidence of enterprise engineering practices across reliability, safety, evaluation, observability, privacy, governance, and operations.
+
+Phase 1 status: Python package skeleton and CLI (no scanning or rules implemented).
 
 ## Vision
 
@@ -53,6 +55,16 @@ The Enterprise AI Readiness Framework (EARF) aims to provide engineering leaders
 2. Use [Assessment Template](framework/assessment-template.md)
 3. Allocate 4-6 weeks for comprehensive assessment
 4. Plan improvement roadmap based on findings
+
+## CLI (Phase 1)
+
+EARF exposes a minimal CLI in Phase 1:
+
+- `earf version` — show EARF version
+- `earf scan PATH` — validate repository path and show placeholder message
+- `earf rules` — placeholder message about rules
+
+Note: EARF findings indicate the presence or absence of implementation evidence. They do not prove that a control is fully effective and do not constitute certification, compliance approval, legal advice, or security assurance.
 
 ## Key Concepts
 

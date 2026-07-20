@@ -1,0 +1,7 @@
+typer>=0.10.0
+
+[dev]
+pytest>=7.0
+pytest-cov
+ruff
+mypy

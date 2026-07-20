@@ -129,3 +129,23 @@ Contributors will be recognized in:
 ## License
 
 By contributing to this project, you agree that your contributions will be licensed under the MIT License.
+
+## Local development
+
+To set up a local editable environment and run tests:
+
+```bash
+python -m pip install -e ".[dev]"
+pytest
+ruff check .
+mypy src/earf
+```
+
+Run the CLI during development with:
+
+```bash
+earf version
+earf scan .
+```
+
+Please include tests for any substantive change and follow the repository's architecture boundaries: collectors capture facts only, and rule logic must remain in rule loaders/engines.
