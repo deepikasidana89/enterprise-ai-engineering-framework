@@ -8,3 +8,8 @@
 - Added rule catalog and CLI commands: rules list, rules validate, rules show
 - Added initial 12-rule catalog under top-level rules directory
 - Added tests for rule model validation, YAML loader, rule catalog, and rules CLI
+- Phase 3: Evidence collection framework
+- Added FileCollector, DependencyCollector, WorkflowCollector, and ConfigCollector
+- Added EvidenceCollectionService with exact deduplication into EvidenceRepository
+- Added CLI command: evidence PATH
+- Added tests for collectors, evidence service, evidence repository, and evidence CLI

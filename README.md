@@ -14,10 +14,11 @@ Completed:
 ✓ Domain models
 ✓ Declarative YAML rule catalog
 ✓ Rule loading and validation
+✓ Evidence collection framework
 
 Not yet implemented:
 
-- Repository scanning
+- Full repository scanning and pattern matching
 - Evidence matching
 - Rule evaluation execution
 - Scoring
@@ -76,12 +77,13 @@ The Enterprise AI Readiness Framework (EARF) aims to provide engineering leaders
 3. Allocate 4-6 weeks for comprehensive assessment
 4. Plan improvement roadmap based on findings
 
-## CLI (Phase 2)
+## CLI (Phase 3)
 
 EARF currently supports:
 
 - `earf version` — show EARF version
 - `earf scan PATH` — validate repository path and show placeholder message
+- `earf evidence PATH` — collect deterministic repository evidence only
 - `earf rules list [--path PATH]` — list loaded rules
 - `earf rules validate [--path PATH]` — validate YAML rule catalog
 - `earf rules show RULE_ID [--path PATH]` — show one rule definition
@@ -103,6 +105,13 @@ Phase 2 limitations:
 - Evidence matching is not implemented.
 - Rule evaluation, scoring, readiness levels, and report generation are not implemented.
 - LLM-powered analysis is not implemented.
+
+Phase 3 evidence scope:
+
+- Collectors gather only deterministic repository evidence into an in-memory `EvidenceRepository`.
+- No rule execution or pass/fail decisions are made.
+- No report generation, SARIF/JSON export, or GitHub Action integration is included.
+- No LLM, RAG, embedding, regex scanning, AST analysis, or secret/prompt detection is included.
 
 Note: EARF findings indicate the presence or absence of implementation evidence. They do not prove that a control is fully effective and do not constitute certification, compliance approval, legal advice, or security assurance.
 

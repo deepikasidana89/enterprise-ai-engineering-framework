@@ -26,5 +26,8 @@ class EvidenceRepository:
     def filter_by_source(self, source: str) -> List[Evidence]:
         return [e for e in self._items if e.source == source]
 
+    def count(self) -> int:
+        return len(self._items)
+
     def clear(self) -> None:
         self._items.clear()

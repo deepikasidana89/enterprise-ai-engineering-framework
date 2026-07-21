@@ -37,6 +37,7 @@ def test_evidence_repository_add_and_filter() -> None:
     repo.add_many([e2])
     all_items = repo.all()
     assert len(all_items) == 2
+    assert repo.count() == 2
     files = repo.filter_by_type(EvidenceType.FILE)
     assert files[0].source == "sc1"
     by_source = repo.filter_by_source("sc2")
@@ -50,3 +51,14 @@ def test_evidence_repository_clear() -> None:
     assert repo.all()
     repo.clear()
     assert repo.all() == []
+    assert repo.count() == 0
+
+
+def test_evidence_confidence_validation() -> None:
+    with pytest.raises(ValueError):
+        Evidence(
+            evidence_type=EvidenceType.FILE,
+            source="sc1",
+            description="d1",
+            confidence=1.5,
+        )

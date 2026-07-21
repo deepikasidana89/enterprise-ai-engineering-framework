@@ -153,3 +153,45 @@ def test_scan_file_path_invalid(tmp_path: Path) -> None:
     assert "Error:" in result.stdout
     assert "Path is not a directory" in result.stdout
     assert "Traceback" not in result.stdout
+
+
+def test_evidence_command_summary(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    (tmp_path / "requirements.txt").write_text("typer>=0.10", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        "[project]\nname='x'\ndependencies=['rich>=13']",
+        encoding="utf-8",
+    )
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text("name: ci", encoding="utf-8")
+
+    result = runner.invoke(app, ["evidence", str(tmp_path)])
+
+    assert result.exit_code == 0
+    assert "Repository loaded successfully" in result.stdout
+    assert "Evidence Summary" in result.stdout
+    assert "Files: 1" in result.stdout
+    assert "Dependencies: 2" in result.stdout
+    assert "Workflows: 1" in result.stdout
+    assert "Configurations: 1" in result.stdout
+    assert "Total Evidence: 5" in result.stdout
+
+
+def test_evidence_command_empty_repository(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["evidence", str(tmp_path)])
+
+    assert result.exit_code == 0
+    assert "Files: 0" in result.stdout
+    assert "Dependencies: 0" in result.stdout
+    assert "Workflows: 0" in result.stdout
+    assert "Configurations: 0" in result.stdout
+    assert "Total Evidence: 0" in result.stdout
+
+
+def test_evidence_command_invalid_path() -> None:
+    result = runner.invoke(app, ["evidence", "no-such-path"])
+
+    assert result.exit_code != 0
+    assert "Error:" in result.stdout
+    assert "Traceback" not in result.stdout

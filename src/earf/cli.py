@@ -12,6 +12,8 @@ from .exceptions import (
     InvalidRepositoryPathError,
     RuleDefinitionError,
 )
+from .evidence_collection import EvidenceCollectionService
+from .models import EvidenceType
 from .rules.catalog import RuleCatalog
 
 app = typer.Typer(help="EARF CLI")
@@ -38,6 +40,39 @@ def scan(path: Path) -> None:
         typer.echo("")
         typer.echo("Repository scanning is not implemented in Phase 1.")
         raise typer.Exit(code=0)
+    except InvalidRepositoryPathError as exc:
+        typer.echo(f"Error: {exc}")
+        raise typer.Exit(code=2)
+
+
+@app.command()
+def evidence(path: Path) -> None:
+    """Collect repository evidence (Phase 3: collection only)."""
+    try:
+        loader = RepositoryLoader()
+        context = loader.load(path)
+
+        service = EvidenceCollectionService()
+        repository = service.collect(context)
+
+        file_count = len(repository.filter_by_type(EvidenceType.FILE))
+        dependency_count = len(repository.filter_by_type(EvidenceType.DEPENDENCY))
+        workflow_count = len(repository.filter_by_type(EvidenceType.WORKFLOW))
+        config_count = len(repository.filter_by_type(EvidenceType.CONFIGURATION))
+
+        typer.echo("Repository loaded successfully")
+        typer.echo("")
+        typer.echo(f"Project: {context.project_name}")
+        typer.echo(f"Path: {context.root_path}")
+        typer.echo("")
+        typer.echo("Evidence Summary")
+        typer.echo("")
+        typer.echo(f"Files: {file_count}")
+        typer.echo(f"Dependencies: {dependency_count}")
+        typer.echo(f"Workflows: {workflow_count}")
+        typer.echo(f"Configurations: {config_count}")
+        typer.echo("")
+        typer.echo(f"Total Evidence: {repository.count()}")
     except InvalidRepositoryPathError as exc:
         typer.echo(f"Error: {exc}")
         raise typer.Exit(code=2)
