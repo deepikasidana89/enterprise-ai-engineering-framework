@@ -1,0 +1,38 @@
+rules:
+  - id: MOD-001
+    title: Model or provider configured
+    description: The codebase defines the model or provider used for AI interactions.
+    category: modeling
+    severity: high
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Explicit provider configuration improves reproducibility.
+    recommendation: Add explicit model/provider configuration settings.
+    tags: [model, configuration]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: source_code
+          identifiers: [model, provider]
+    metadata: {}
+
+  - id: MOD-002
+    title: Model version documented
+    description: The repository documents model versions or version pinning strategy.
+    category: modeling
+    severity: medium
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Version visibility reduces drift and debugging effort.
+    recommendation: Document model versions and update procedures.
+    tags: [model, versioning]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: documentation
+          identifiers: [model version, release notes]
+    metadata: {}

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+import re
 from typing import List, Optional, TypeAlias
 
 MetadataValue: TypeAlias = (
@@ -77,9 +78,32 @@ class RuleDefinition:
     description: str
     category: str
     severity: Severity
-    version: str
-    applicability: Optional[str] = None
+    version: str = "1.0"
+    enabled: bool = True
+    applicability: Metadata = field(default_factory=dict)
+    rationale: str = ""
+    recommendation: str = ""
+    tags: list[str] = field(default_factory=list)
+    references: list[str] = field(default_factory=list)
+    evidence_requirements: Metadata = field(default_factory=dict)
     metadata: Metadata = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        required_fields = {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "category": self.category,
+            "version": self.version,
+        }
+        for field_name, value in required_fields.items():
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{field_name} must be a non-empty string")
+
+        if re.fullmatch(r"^[A-Z]{3}-\d{3}$", self.id.strip()) is None:
+            raise ValueError(
+                f"id must match pattern ^[A-Z]{{3}}-\\d{{3}}$, got {self.id!r}"
+            )
 
 
 @dataclass

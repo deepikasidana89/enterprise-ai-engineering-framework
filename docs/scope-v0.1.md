@@ -1,8 +1,8 @@
-# Scope v0.1 (Phase 1)
+# Scope v0.1 (Phase 2)
 
 ## Purpose
 
-Phase 1 creates a clean, extensible Python package skeleton with clearly defined interfaces for repository loading, evidence collection, rule evaluation, scoring, and reporting. No real analysis or rule evaluation is implemented in this phase.
+Phase 2 extends the Phase 1 skeleton with declarative YAML rules, loading, validation, duplicate detection, and rule catalog CLI commands. No repository scanning, evidence matching, rule evaluation execution, scoring, or reporting is implemented in this phase.
 
 ## Supported inputs
 
@@ -16,22 +16,28 @@ Phase 1 creates a clean, extensible Python package skeleton with clearly defined
 
 - Package layout under `src/earf`
 - Domain models and interfaces
-- CLI commands: `version`, `scan`, `rules`
-- Unit tests for Phase 1
+- YAML rule schema and loader
+- Rule validation and duplicate ID detection
+- Rule catalog query methods
+- CLI commands: `version`, `scan`, `rules list`, `rules validate`, `rules show`
+- Unit tests for Phase 2
 
 ## Out-of-scope
 
-- Rule definitions and matching
-- Real scanning or pattern matching
+- Repository scanning and evidence matching
+- Rule evaluation execution
+- Scoring and readiness levels
+- Report generation
 - LLM integrations
 - External APIs or persistence
 
-## Phase 1 limitations
+## Phase 2 limitations
 
 - Collectors return empty evidence lists.
-- Rule loading and evaluation are unimplemented.
+- Rule evaluation is unimplemented.
+- Scoring and reporting are unimplemented.
 
 ## Future phases
 
-- Phase 2: declarative rule loader, rule definitions, basic rules, simple scoring
-- Phase 3: real collectors, scoring strategies, reporters, CI/CD packaging
+- Phase 3: repository scanning, evidence matching, and rule engine evaluation
+- Phase 4: scoring, readiness levels, and reporting

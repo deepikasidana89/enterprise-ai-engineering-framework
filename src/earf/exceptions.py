@@ -16,7 +16,19 @@ class RuleDefinitionError(EARFError):
     pass
 
 
+class RuleLoadError(RuleDefinitionError):
+    pass
+
+
+class RuleValidationError(RuleDefinitionError):
+    pass
+
+
 class DuplicateRuleError(RuleDefinitionError):
+    pass
+
+
+class RuleNotFoundError(RuleDefinitionError):
     pass
 
 

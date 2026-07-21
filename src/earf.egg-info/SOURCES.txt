@@ -24,6 +24,7 @@ src/earf/reporting/console.py
 src/earf/reporting/json_reporter.py
 src/earf/reporting/markdown_reporter.py
 src/earf/rules/__init__.py
+src/earf/rules/catalog.py
 src/earf/rules/engine.py
 src/earf/rules/loader.py
 src/earf/rules/models.py
@@ -32,3 +33,5 @@ src/earf/scoring/engine.py
 tests/test_cli.py
 tests/test_models.py
 tests/test_repository.py
+tests/test_rule_catalog.py
+tests/test_rule_loader.py

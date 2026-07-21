@@ -1,11 +1,39 @@
+from pathlib import Path
+
 from typer.testing import CliRunner
 
 from earf import __version__
 from earf.cli import app
-from pathlib import Path
 
 
 runner = CliRunner()
+
+
+def _valid_rule_yaml(rule_id: str = "GOV-001") -> str:
+    return f"""
+rules:
+  - id: {rule_id}
+    title: Ownership documented
+    description: Owner exists
+    category: governance
+    severity: high
+    version: "1.0"
+    enabled: true
+    applicability: {{always: true}}
+    rationale: Why
+    recommendation: Do this
+    tags: [governance]
+    references: []
+    evidence_requirements: {{any: []}}
+    metadata: {{}}
+""".strip()
+
+
+def _write_rules(tmp_path: Path, filename: str = "rules.yaml", rule_id: str = "GOV-001") -> Path:
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir(exist_ok=True)
+    (rules_dir / filename).write_text(_valid_rule_yaml(rule_id), encoding="utf-8")
+    return rules_dir
 
 
 def test_version_command() -> None:
@@ -14,10 +42,89 @@ def test_version_command() -> None:
     assert f"EARF {__version__}" in result.stdout
 
 
-def test_rules_command() -> None:
-    result = runner.invoke(app, ["rules"])
+def test_rules_list_command(tmp_path: Path) -> None:
+    rules_dir = _write_rules(tmp_path)
+    result = runner.invoke(app, ["rules", "list", "--path", str(rules_dir)])
     assert result.exit_code == 0
-    assert "EARF rule loading is not implemented in Phase 1." in result.stdout
+    assert "ID  Category  Severity  Title  Enabled" in result.stdout
+    assert "GOV-001" in result.stdout
+    assert "1 rules loaded." in result.stdout
+
+
+def test_rules_validate_command(tmp_path: Path) -> None:
+    rules_dir = _write_rules(tmp_path)
+    result = runner.invoke(app, ["rules", "validate", "--path", str(rules_dir)])
+    assert result.exit_code == 0
+    assert "Rule catalog is valid." in result.stdout
+    assert "1 rules loaded from 1 files." in result.stdout
+
+
+def test_rules_show_command(tmp_path: Path) -> None:
+    rules_dir = _write_rules(tmp_path)
+    result = runner.invoke(app, ["rules", "show", "GOV-001", "--path", str(rules_dir)])
+    assert result.exit_code == 0
+    assert "id: GOV-001" in result.stdout
+    assert "category: governance" in result.stdout
+    assert "severity: high" in result.stdout
+
+
+def test_rules_custom_path(tmp_path: Path) -> None:
+    custom = tmp_path / "custom-rules"
+    custom.mkdir()
+    (custom / "catalog.yml").write_text(_valid_rule_yaml("GOV-002"), encoding="utf-8")
+
+    result = runner.invoke(app, ["rules", "list", "--path", str(custom)])
+    assert result.exit_code == 0
+    assert "GOV-002" in result.stdout
+
+
+def test_rules_invalid_path() -> None:
+    result = runner.invoke(app, ["rules", "validate", "--path", "no-such-path"])
+    assert result.exit_code != 0
+    assert "Error:" in result.stdout
+    assert "Traceback" not in result.stdout
+
+
+def test_rules_malformed_yaml(tmp_path: Path) -> None:
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "broken.yaml").write_text("rules: [", encoding="utf-8")
+
+    result = runner.invoke(app, ["rules", "validate", "--path", str(rules_dir)])
+    assert result.exit_code != 0
+    assert "Error:" in result.stdout
+    assert "Malformed YAML" in result.stdout
+    assert "Traceback" not in result.stdout
+
+
+def test_rules_duplicate_ids(tmp_path: Path) -> None:
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "one.yaml").write_text(_valid_rule_yaml("GOV-001"), encoding="utf-8")
+    (rules_dir / "two.yaml").write_text(_valid_rule_yaml("GOV-001"), encoding="utf-8")
+
+    result = runner.invoke(app, ["rules", "validate", "--path", str(rules_dir)])
+    assert result.exit_code != 0
+    assert "Duplicate rule id" in result.stdout
+    assert "Traceback" not in result.stdout
+
+
+def test_rules_unknown_id(tmp_path: Path) -> None:
+    rules_dir = _write_rules(tmp_path)
+    result = runner.invoke(app, ["rules", "show", "GOV-999", "--path", str(rules_dir)])
+    assert result.exit_code != 0
+    assert "Rule not found" in result.stdout
+    assert "Traceback" not in result.stdout
+
+
+def test_rules_non_zero_exit_on_error(tmp_path: Path) -> None:
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "invalid.yaml").write_text("rules: {}", encoding="utf-8")
+
+    result = runner.invoke(app, ["rules", "list", "--path", str(rules_dir)])
+    assert result.exit_code != 0
+    assert "Error:" in result.stdout
 
 
 def test_scan_valid(tmp_path: Path) -> None:

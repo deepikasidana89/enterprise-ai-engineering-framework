@@ -12,13 +12,17 @@ Completed:
 ✓ Package architecture
 ✓ CLI
 ✓ Domain models
+✓ Declarative YAML rule catalog
+✓ Rule loading and validation
 
 Not yet implemented:
 
-- Rule loading
 - Repository scanning
+- Evidence matching
+- Rule evaluation execution
 - Scoring
 - Reporting
+- LLM analysis
 
 ## Vision
 
@@ -72,13 +76,33 @@ The Enterprise AI Readiness Framework (EARF) aims to provide engineering leaders
 3. Allocate 4-6 weeks for comprehensive assessment
 4. Plan improvement roadmap based on findings
 
-## CLI (Phase 1)
+## CLI (Phase 2)
 
-EARF exposes a minimal CLI in Phase 1:
+EARF currently supports:
 
 - `earf version` — show EARF version
 - `earf scan PATH` — validate repository path and show placeholder message
-- `earf rules` — placeholder message about rules
+- `earf rules list [--path PATH]` — list loaded rules
+- `earf rules validate [--path PATH]` — validate YAML rule catalog
+- `earf rules show RULE_ID [--path PATH]` — show one rule definition
+
+`python -m earf` supports the same commands.
+
+Default rules path is top-level `rules/`.
+
+Rule YAML requirements:
+
+- Top-level `rules` key containing a list
+- Required per-rule fields: `id`, `title`, `description`, `category`, `severity`
+- Rule ID format: `^[A-Z]{3}-\d{3}$`
+- Supported severities: `critical`, `high`, `medium`, `low`, `info`
+
+Phase 2 limitations:
+
+- Repository scanning is still placeholder-only.
+- Evidence matching is not implemented.
+- Rule evaluation, scoring, readiness levels, and report generation are not implemented.
+- LLM-powered analysis is not implemented.
 
 Note: EARF findings indicate the presence or absence of implementation evidence. They do not prove that a control is fully effective and do not constitute certification, compliance approval, legal advice, or security assurance.
 

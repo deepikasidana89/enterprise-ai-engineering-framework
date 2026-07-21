@@ -1,0 +1,19 @@
+rules:
+  - id: EVA-001
+    title: AI behavior has automated evaluations
+    description: The repository contains automated evaluation checks for AI behavior.
+    category: evaluation
+    severity: high
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Automated evaluations catch regressions before release.
+    recommendation: Add repeatable AI evaluation tests to CI workflows.
+    tags: [evaluation, testing]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: workflow
+          identifiers: [ci, evaluation]
+    metadata: {}

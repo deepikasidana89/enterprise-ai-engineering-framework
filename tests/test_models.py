@@ -9,6 +9,7 @@ from earf.models import (
     RepositoryFile,
     RepositoryContext,
     Evidence,
+    RuleDefinition,
     RuleResult,
 )
 
@@ -67,3 +68,64 @@ def test_package_version_is_defined() -> None:
     import earf
 
     assert earf.__version__
+
+
+def test_rule_definition_valid_creation() -> None:
+    rule = RuleDefinition(
+        id="GOV-001",
+        title="Ownership documented",
+        description="Owner exists",
+        category="governance",
+        severity=Severity.HIGH,
+    )
+    assert rule.version == "1.0"
+    assert rule.enabled is True
+
+
+def test_rule_definition_invalid_id() -> None:
+    with pytest.raises(ValueError):
+        RuleDefinition(
+            id="gov-1",
+            title="Ownership documented",
+            description="Owner exists",
+            category="governance",
+            severity=Severity.HIGH,
+        )
+
+
+def test_rule_definition_empty_required_fields() -> None:
+    with pytest.raises(ValueError):
+        RuleDefinition(
+            id="GOV-001",
+            title="",
+            description="Owner exists",
+            category="governance",
+            severity=Severity.HIGH,
+        )
+
+
+def test_rule_definition_defaults_are_independent() -> None:
+    first = RuleDefinition(
+        id="GOV-001",
+        title="Ownership documented",
+        description="Owner exists",
+        category="governance",
+        severity=Severity.HIGH,
+    )
+    second = RuleDefinition(
+        id="GOV-002",
+        title="Purpose documented",
+        description="Purpose exists",
+        category="governance",
+        severity=Severity.MEDIUM,
+    )
+
+    first.tags.append("custom")
+    first.applicability["always"] = True
+    first.evidence_requirements["any"] = []
+    first.metadata["source"] = "test"
+
+    assert second.tags == []
+    assert second.applicability == {}
+    assert second.evidence_requirements == {}
+    assert second.metadata == {}

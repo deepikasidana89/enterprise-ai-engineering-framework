@@ -1,0 +1,19 @@
+rules:
+  - id: OBS-001
+    title: AI interactions produce logs or telemetry
+    description: AI request and response activity is captured for monitoring.
+    category: observability
+    severity: medium
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Telemetry enables incident response and continuous tuning.
+    recommendation: Add structured logs and telemetry for AI interactions.
+    tags: [observability, logging]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: source_code
+          identifiers: [log, telemetry, tracing]
+    metadata: {}
