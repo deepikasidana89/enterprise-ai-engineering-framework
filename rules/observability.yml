@@ -14,6 +14,20 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: source_code
-          identifiers: [log, telemetry, tracing]
+        - evidence_type: dependency
+          path: requirements.txt
+          identifiers:
+            - opentelemetry-api
+            - opentelemetry-sdk
+            - structlog
+            - loguru
+            - prometheus-client
+        - evidence_type: dependency
+          path: pyproject.toml
+          identifiers:
+            - opentelemetry-api
+            - opentelemetry-sdk
+            - structlog
+            - loguru
+            - prometheus-client
     metadata: {}

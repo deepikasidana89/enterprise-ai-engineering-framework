@@ -36,6 +36,103 @@ def _write_rules(tmp_path: Path, filename: str = "rules.yaml", rule_id: str = "G
     return rules_dir
 
 
+def _evaluation_rules_yaml() -> str:
+    return """
+rules:
+  - id: GOV-001
+    title: Readme exists
+    description: Repository has readme
+    category: governance
+    severity: high
+    version: "1.0"
+    enabled: true
+    applicability: {always: true}
+    rationale: why
+    recommendation: do
+    tags: []
+    references: []
+    evidence_requirements:
+      evidence_type: file
+      identifiers: [README.md]
+    metadata: {}
+
+  - id: SEC-001
+    title: Security file exists
+    description: Repository has security file
+    category: security
+    severity: high
+    version: "1.0"
+    enabled: true
+    applicability: {always: true}
+    rationale: why
+    recommendation: do
+    tags: []
+    references: []
+    evidence_requirements:
+      evidence_type: file
+      identifiers: [SECURITY.md]
+    metadata: {}
+""".strip()
+
+
+def _score_rules_yaml() -> str:
+        return "\n".join(
+                [
+                        "rules:",
+                        "  - id: GOV-001",
+                        "    title: Readme exists",
+                        "    description: Repository has readme",
+                        "    category: governance",
+                        "    severity: high",
+                        "    version: \"1.0\"",
+                        "    enabled: true",
+                        "    applicability: {always: true}",
+                        "    rationale: why",
+                        "    recommendation: do",
+                        "    tags: []",
+                        "    references: []",
+                        "    evidence_requirements:",
+                        "      evidence_type: file",
+                        "      identifiers: [README.md]",
+                        "    metadata: {}",
+                        "",
+                        "  - id: SEC-001",
+                        "    title: Security file exists",
+                        "    description: Repository has security file",
+                        "    category: security",
+                        "    severity: medium",
+                        "    version: \"1.0\"",
+                        "    enabled: true",
+                        "    applicability: {always: true}",
+                        "    rationale: why",
+                        "    recommendation: do",
+                        "    tags: []",
+                        "    references: []",
+                        "    evidence_requirements:",
+                        "      evidence_type: file",
+                        "      identifiers: [SECURITY.md]",
+                        "    metadata: {}",
+                        "",
+                        "  - id: REL-001",
+                        "    title: Dockerfile exists",
+                        "    description: Repository has Dockerfile",
+                        "    category: reliability",
+                        "    severity: low",
+                        "    version: \"1.0\"",
+                        "    enabled: true",
+                        "    applicability: {always: true}",
+                        "    rationale: why",
+                        "    recommendation: do",
+                        "    tags: []",
+                        "    references: []",
+                        "    evidence_requirements:",
+                        "      evidence_type: file",
+                        "      identifiers: [Dockerfile]",
+                        "    metadata: {}",
+                ]
+        )
+
+
 def test_version_command() -> None:
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
@@ -195,3 +292,96 @@ def test_evidence_command_invalid_path() -> None:
     assert result.exit_code != 0
     assert "Error:" in result.stdout
     assert "Traceback" not in result.stdout
+
+
+def test_evaluate_command_summary(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_evaluation_rules_yaml(), encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        ["evaluate", str(tmp_path), "--rules-path", str(rules_dir)],
+    )
+
+    assert result.exit_code == 0
+    assert "Rule Evaluation" in result.stdout
+    assert "GOV-001" in result.stdout
+    assert "SEC-001" in result.stdout
+    assert "Passed: 1" in result.stdout
+    assert "Failed: 1" in result.stdout
+    assert "Total: 2" in result.stdout
+
+
+def test_evaluate_command_show_evidence(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_evaluation_rules_yaml(), encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "evaluate",
+            str(tmp_path),
+            "--rules-path",
+            str(rules_dir),
+            "--show-evidence",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "matched: README.md" in result.stdout
+
+
+def test_score_command_hundred_percent_repository(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    (tmp_path / "SECURITY.md").write_text("security", encoding="utf-8")
+    (tmp_path / "Dockerfile").write_text("FROM python:3.11", encoding="utf-8")
+
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_score_rules_yaml(), encoding="utf-8")
+
+    result = runner.invoke(app, ["score", str(tmp_path), "--rules-path", str(rules_dir)])
+
+    assert result.exit_code == 0
+    assert "Overall Readiness" in result.stdout
+    assert "100.0 / 100" in result.stdout
+    assert "Production Status" in result.stdout
+    assert "READY" in result.stdout
+    assert "Passed: 3" in result.stdout
+    assert "Failed: 0" in result.stdout
+    assert "Critical Failures: 0" in result.stdout
+
+
+def test_score_command_zero_percent_repository(tmp_path: Path) -> None:
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_score_rules_yaml(), encoding="utf-8")
+
+    result = runner.invoke(app, ["score", str(tmp_path), "--rules-path", str(rules_dir)])
+
+    assert result.exit_code == 0
+    assert "0.0 / 100" in result.stdout
+    assert "NOT_READY" in result.stdout
+    assert "Passed: 0" in result.stdout
+    assert "Failed: 3" in result.stdout
+
+
+def test_score_command_mixed_repository(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    (tmp_path / "SECURITY.md").write_text("security", encoding="utf-8")
+
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_score_rules_yaml(), encoding="utf-8")
+
+    result = runner.invoke(app, ["score", str(tmp_path), "--rules-path", str(rules_dir)])
+
+    assert result.exit_code == 0
+    assert "84.6 / 100" in result.stdout
+    assert "READY_WITH_WARNINGS" in result.stdout
+    assert "Passed: 2" in result.stdout
+    assert "Failed: 1" in result.stdout

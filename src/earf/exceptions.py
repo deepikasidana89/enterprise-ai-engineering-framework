@@ -32,6 +32,18 @@ class RuleNotFoundError(RuleDefinitionError):
     pass
 
 
+class InvalidEvidenceRequirementError(RuleDefinitionError):
+    pass
+
+
+class UnsupportedApplicabilityError(RuleDefinitionError):
+    pass
+
+
+class RuleEvaluationError(RuleDefinitionError):
+    pass
+
+
 class ConfigurationError(EARFError):
     pass
 

@@ -14,8 +14,24 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: source_code
-          identifiers: [model, provider]
+        - evidence_type: dependency
+          path: requirements.txt
+          identifiers:
+            - openai
+            - anthropic
+            - google-generativeai
+            - azure-ai-inference
+            - litellm
+            - langchain
+        - evidence_type: dependency
+          path: pyproject.toml
+          identifiers:
+            - openai
+            - anthropic
+            - google-generativeai
+            - azure-ai-inference
+            - litellm
+            - langchain
     metadata: {}
 
   - id: MOD-002
@@ -33,6 +49,8 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: documentation
-          identifiers: [model version, release notes]
+        - evidence_type: dependency
+          path: requirements.txt
+        - evidence_type: dependency
+          path: pyproject.toml
     metadata: {}

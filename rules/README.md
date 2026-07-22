@@ -26,9 +26,22 @@ rules:
 		evidence_requirements:
 			any:
 				- evidence_type: file
-					identifiers: [CODEOWNERS, OWNERS]
+					identifiers: [CODEOWNERS]
 		metadata: {}
 ```
+
+Supported deterministic evidence types in Phase 4:
+
+- `file`
+- `dependency`
+- `workflow`
+- `configuration`
+
+Project design rule:
+
+- Every `evidence_requirements` clause in YAML must map to evidence currently emitted by collectors.
+- Use exact emitted identifiers (for example `README.md`, `CODEOWNERS`, `SECURITY.md`, `pyproject.toml`, `ci.yml`).
+- Do not use abstract or unsupported evidence types and identifiers (for example `documentation`, `source_code`, `README`, `docs`).
 
 Required fields:
 

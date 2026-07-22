@@ -62,3 +62,28 @@ def test_evidence_confidence_validation() -> None:
             description="d1",
             confidence=1.5,
         )
+
+
+def test_evidence_repository_find_helpers() -> None:
+    repo = EvidenceRepository()
+    file_item = Evidence(
+        evidence_type=EvidenceType.FILE,
+        source="file_collector",
+        description="d1",
+        identifier="README.md",
+        path="README.md",
+    )
+    dep_item = Evidence(
+        evidence_type=EvidenceType.DEPENDENCY,
+        source="dependency_collector",
+        description="d2",
+        identifier="openai",
+        path="requirements.txt",
+    )
+    repo.add_many([file_item, dep_item])
+
+    assert repo.find_by_type(EvidenceType.FILE) == [file_item]
+    assert repo.find_by_identifier("README.md") == [file_item]
+    assert repo.find(evidence_type=EvidenceType.DEPENDENCY) == [dep_item]
+    assert repo.find(source="DEPENDENCY_COLLECTOR") == [dep_item]
+    assert repo.find(path="requirements.txt") == [dep_item]

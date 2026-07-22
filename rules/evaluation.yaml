@@ -15,5 +15,5 @@ rules:
     evidence_requirements:
       any:
         - evidence_type: workflow
-          identifiers: [ci, evaluation]
+          identifiers: [ci.yml, ci.yaml, evaluation.yml, evaluation.yaml]
     metadata: {}

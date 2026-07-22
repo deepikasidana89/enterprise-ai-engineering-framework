@@ -14,7 +14,10 @@ from .exceptions import (
 )
 from .evidence_collection import EvidenceCollectionService
 from .models import EvidenceType
+from .rules.evaluation_service import RuleEvaluationService
+from .rules.results import RuleStatus
 from .rules.catalog import RuleCatalog
+from .scoring.service import ScoringService
 
 app = typer.Typer(help="EARF CLI")
 rules_app = typer.Typer(help="Rule catalog commands")
@@ -74,6 +77,118 @@ def evidence(path: Path) -> None:
         typer.echo("")
         typer.echo(f"Total Evidence: {repository.count()}")
     except InvalidRepositoryPathError as exc:
+        typer.echo(f"Error: {exc}")
+        raise typer.Exit(code=2)
+
+
+@app.command()
+def evaluate(
+    path: Path,
+    show_evidence: bool = typer.Option(
+        False,
+        "--show-evidence",
+        help="Show matched evidence identifiers per rule",
+    ),
+    rules_path: Path = typer.Option(
+        Path("rules"),
+        "--rules-path",
+        help="Rules file or directory",
+    ),
+) -> None:
+    """Evaluate rules against collected evidence (Phase 4: matching only)."""
+    try:
+        loader = RepositoryLoader()
+        context = loader.load(path)
+
+        evidence_repository = EvidenceCollectionService().collect(context)
+        catalog, _ = RuleCatalog.from_path(rules_path)
+        results = RuleEvaluationService().evaluate_all(catalog, evidence_repository)
+
+        typer.echo(f"Repository: {context.project_name}")
+        typer.echo("")
+        typer.echo("Rule Evaluation")
+        typer.echo("")
+        typer.echo("ID       Status          Title")
+
+        rule_lookup = {rule.id: rule for rule in catalog.all()}
+        for result in results:
+            title = rule_lookup.get(result.rule_id)
+            title_text = title.title if title is not None else ""
+            status = result.status.name
+            typer.echo(f"{result.rule_id:<8} {status:<15} {title_text}")
+            if show_evidence and result.matched_evidence:
+                matched_ids = ", ".join(e.identifier for e in result.matched_evidence)
+                typer.echo(f"  matched: {matched_ids}")
+
+        summary = {
+            RuleStatus.PASS: 0,
+            RuleStatus.FAIL: 0,
+            RuleStatus.NOT_APPLICABLE: 0,
+            RuleStatus.DISABLED: 0,
+            RuleStatus.ERROR: 0,
+        }
+        for result in results:
+            summary[result.status] += 1
+
+        typer.echo("")
+        typer.echo("Summary")
+        typer.echo("")
+        typer.echo(f"Passed: {summary[RuleStatus.PASS]}")
+        typer.echo(f"Failed: {summary[RuleStatus.FAIL]}")
+        typer.echo(f"Not Applicable: {summary[RuleStatus.NOT_APPLICABLE]}")
+        typer.echo(f"Disabled: {summary[RuleStatus.DISABLED]}")
+        typer.echo(f"Errors: {summary[RuleStatus.ERROR]}")
+        typer.echo(f"Total: {len(results)}")
+    except (InvalidRepositoryPathError, RuleDefinitionError) as exc:
+        typer.echo(f"Error: {exc}")
+        raise typer.Exit(code=2)
+
+
+@app.command()
+def score(
+    path: Path,
+    rules_path: Path = typer.Option(
+        Path("rules"),
+        "--rules-path",
+        help="Rules file or directory",
+    ),
+) -> None:
+    """Calculate enterprise readiness score from rule evaluation results."""
+    try:
+        loader = RepositoryLoader()
+        context = loader.load(path)
+
+        evidence_repository = EvidenceCollectionService().collect(context)
+        catalog, _ = RuleCatalog.from_path(rules_path)
+        results = RuleEvaluationService().evaluate_all(catalog, evidence_repository)
+        readiness = ScoringService().score(results, catalog)
+
+        typer.echo(f"Repository: {context.project_name}")
+        typer.echo("")
+        typer.echo("Overall Readiness")
+        typer.echo("")
+        typer.echo(f"{readiness.overall_score:.1f} / 100")
+        typer.echo("")
+        typer.echo("Production Status")
+        typer.echo("")
+        typer.echo(readiness.production_readiness.value)
+        typer.echo("")
+        typer.echo("Category Scores")
+        typer.echo("")
+        for category, value in sorted(readiness.category_scores.items()):
+            typer.echo(f"{category:<15} {value:.1f}")
+
+        typer.echo("")
+        typer.echo("Summary")
+        typer.echo("")
+        typer.echo(f"Passed: {readiness.passed_rules}")
+        typer.echo(f"Failed: {readiness.failed_rules}")
+        typer.echo(f"Not Applicable: {readiness.not_applicable_rules}")
+        typer.echo(f"Disabled: {readiness.disabled_rules}")
+        typer.echo(f"Errors: {readiness.error_rules}")
+        typer.echo(f"Critical Failures: {readiness.critical_failures}")
+        typer.echo(f"High Failures: {readiness.high_failures}")
+    except (InvalidRepositoryPathError, RuleDefinitionError) as exc:
         typer.echo(f"Error: {exc}")
         raise typer.Exit(code=2)
 

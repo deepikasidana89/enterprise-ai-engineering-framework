@@ -15,12 +15,11 @@ Completed:
 ✓ Declarative YAML rule catalog
 ✓ Rule loading and validation
 ✓ Evidence collection framework
+✓ Deterministic evidence-to-rule matching
 
 Not yet implemented:
 
 - Full repository scanning and pattern matching
-- Evidence matching
-- Rule evaluation execution
 - Scoring
 - Reporting
 - LLM analysis
@@ -77,13 +76,15 @@ The Enterprise AI Readiness Framework (EARF) aims to provide engineering leaders
 3. Allocate 4-6 weeks for comprehensive assessment
 4. Plan improvement roadmap based on findings
 
-## CLI (Phase 3)
+## CLI (Phase 5)
 
 EARF currently supports:
 
 - `earf version` — show EARF version
 - `earf scan PATH` — validate repository path and show placeholder message
 - `earf evidence PATH` — collect deterministic repository evidence only
+- `earf evaluate PATH [--show-evidence]` — evaluate rules against collected evidence
+- `earf score PATH [--rules-path PATH]` — calculate weighted readiness score from `RuleResult` values
 - `earf rules list [--path PATH]` — list loaded rules
 - `earf rules validate [--path PATH]` — validate YAML rule catalog
 - `earf rules show RULE_ID [--path PATH]` — show one rule definition
@@ -99,19 +100,49 @@ Rule YAML requirements:
 - Rule ID format: `^[A-Z]{3}-\d{3}$`
 - Supported severities: `critical`, `high`, `medium`, `low`, `info`
 
-Phase 2 limitations:
-
-- Repository scanning is still placeholder-only.
-- Evidence matching is not implemented.
-- Rule evaluation, scoring, readiness levels, and report generation are not implemented.
-- LLM-powered analysis is not implemented.
-
-Phase 3 evidence scope:
+Phase 4.5+ evaluation and scoring scope:
 
 - Collectors gather only deterministic repository evidence into an in-memory `EvidenceRepository`.
-- No rule execution or pass/fail decisions are made.
+- Rule evaluation is deterministic and based only on evidence metadata requirements.
+- Supported collector-emitted evidence types are: `file`, `dependency`, `workflow`, and `configuration`.
+- Rule catalog `evidence_requirements` must reference only these emitted evidence types and exact emitted identifiers.
+- Status values are: `PASS`, `FAIL`, `NOT_APPLICABLE`, `DISABLED`, `ERROR`.
+- Scoring consumes only `RuleResult` + `RuleDefinition` metadata (severity/category) and does not inspect repositories directly.
+- Default severity weights are: critical=10, high=7, medium=4, low=2, informational=1.
+- `NOT_APPLICABLE` and `DISABLED` are excluded from score denominator.
+- `ERROR` contributes zero earned weight and remains in denominator.
+- Overall and category scores are normalized to 0-100 and rounded to one decimal.
+- Production readiness gates:
+	- `NOT_READY` if any critical rule fails
+	- `READY` if no critical failures and overall score >= 85
+	- `READY_WITH_WARNINGS` if no critical failures and overall score >= 70
+	- `NOT_READY` otherwise
 - No report generation, SARIF/JSON export, or GitHub Action integration is included.
 - No LLM, RAG, embedding, regex scanning, AST analysis, or secret/prompt detection is included.
+
+Evaluation pipeline:
+
+Repository
+	↓
+EvidenceCollectionService
+	↓
+EvidenceRepository
+	↓
+RuleEvaluationService
+	↓
+RuleResult
+
+Scoring philosophy:
+
+- Severity-weighted scoring rewards controls based on business risk impact.
+- Category scores expose uneven maturity across governance, security, safety, reliability, and other loaded categories.
+- Production readiness is a strict gate, not just a percentile; critical failures block a `READY` decision.
+
+Example:
+
+```bash
+python -m earf score .
+```
 
 Note: EARF findings indicate the presence or absence of implementation evidence. They do not prove that a control is fully effective and do not constitute certification, compliance approval, legal advice, or security assurance.
 

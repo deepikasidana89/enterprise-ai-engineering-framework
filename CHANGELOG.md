@@ -13,3 +13,9 @@
 - Added EvidenceCollectionService with exact deduplication into EvidenceRepository
 - Added CLI command: evidence PATH
 - Added tests for collectors, evidence service, evidence repository, and evidence CLI
+- Phase 4: Evidence-to-rule matching
+- Added RuleStatus and rule-scoring-independent RuleResult model for evaluation outcomes
+- Added RuleEvaluator with deterministic support for direct requirements and any/all operators
+- Added RuleEvaluationService to evaluate full catalogs in deterministic rule-id order
+- Added CLI command: evaluate PATH with optional --show-evidence
+- Added tests for evaluator logic, evaluation service ordering, repository query helpers, and evaluate CLI output

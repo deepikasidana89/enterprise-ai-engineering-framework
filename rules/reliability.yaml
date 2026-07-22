@@ -14,8 +14,12 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: source_code
-          identifiers: [timeout]
+        - evidence_type: dependency
+          path: requirements.txt
+          identifiers: [httpx, requests, openai, anthropic]
+        - evidence_type: dependency
+          path: pyproject.toml
+          identifiers: [httpx, requests, openai, anthropic]
     metadata: {}
 
   - id: REL-002
@@ -33,6 +37,10 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: source_code
-          identifiers: [retry, fallback]
+        - evidence_type: dependency
+          path: requirements.txt
+          identifiers: [tenacity, backoff]
+        - evidence_type: dependency
+          path: pyproject.toml
+          identifiers: [tenacity, backoff]
     metadata: {}

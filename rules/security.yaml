@@ -14,8 +14,8 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: source_code
-          identifiers: [api_key, token, secret]
+        - evidence_type: file
+          identifiers: [.env.example, SECURITY.md]
     metadata: {}
 
   - id: SEC-002
@@ -32,7 +32,9 @@ rules:
     tags: [security, least-privilege]
     references: []
     evidence_requirements:
-      any:
-        - evidence_type: configuration
-          identifiers: [permissions, scopes]
+      all:
+        - evidence_type: file
+          identifiers: [CODEOWNERS]
+        - evidence_type: workflow
+          identifiers: [ci.yml, ci.yaml]
     metadata: {}

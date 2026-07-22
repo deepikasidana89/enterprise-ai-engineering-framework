@@ -15,7 +15,7 @@ rules:
     evidence_requirements:
       any:
         - evidence_type: file
-          identifiers: [CODEOWNERS, OWNERS]
+          identifiers: [CODEOWNERS]
     metadata: {}
 
   - id: GOV-002
@@ -33,6 +33,6 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: documentation
-          identifiers: [README, docs]
+        - evidence_type: file
+          identifiers: [README.md]
     metadata: {}
