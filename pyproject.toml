@@ -1,71 +1,63 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "earf"
-dynamic = ["version"]
-description = "Enterprise AI Readiness Framework for evaluating production readiness of AI systems"
+version = "0.7.0"
+description = "Enterprise AI Readiness Framework for evaluating the production readiness of enterprise AI systems."
 readme = "README.md"
 requires-python = ">=3.11"
-license = "MIT"
-authors = [
-	{ name = "EARF Contributors" },
-]
-keywords = [
-	"ai",
-	"readiness",
-	"governance",
-	"risk",
-	"evaluation",
-	"llm",
-]
-classifiers = [
-	"Development Status :: 4 - Beta",
-	"Intended Audience :: Developers",
-	"Intended Audience :: Information Technology",
-	"Programming Language :: Python :: 3",
-	"Programming Language :: Python :: 3.11",
-	"Programming Language :: Python :: 3.12",
-	"Topic :: Software Development :: Quality Assurance",
-	"Topic :: Scientific/Engineering :: Artificial Intelligence",
-]
-dependencies = ["typer>=0.10.0", "PyYAML>=6.0"]
+license = { text = "MIT" }
 
-[project.urls]
-Homepage = "https://github.com/deepikasidana89/enterprise-ai-readiness-framework"
-Documentation = "https://github.com/deepikasidana89/enterprise-ai-readiness-framework#readme"
-Repository = "https://github.com/deepikasidana89/enterprise-ai-readiness-framework"
-Issues = "https://github.com/deepikasidana89/enterprise-ai-readiness-framework/issues"
+authors = [
+  { name = "Deepika Sidana" }
+]
+
+keywords = [
+  "enterprise-ai",
+  "artificial-intelligence",
+  "generative-ai",
+  "llm",
+  "ai-governance",
+  "ai-safety",
+  "ai-readiness",
+  "ai-evaluation"
+]
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+
+dependencies = [
+  # keep existing runtime dependencies here
+]
+
+[project.optional-dependencies]
+dev = [
+  "build",
+  "mypy",
+  "pytest",
+  "pytest-cov",
+  "ruff",
+  "twine"
+]
 
 [project.scripts]
 earf = "earf.cli:main"
 
-[tool.setuptools.dynamic]
-version = { attr = "earf.__about__.__version__" }
-
-[tool.setuptools.packages.find]
-where = ["src"]
+[project.urls]
+Homepage = "https://github.com/<your-username>/enterprise-ai-readiness-framework"
+Repository = "https://github.com/<your-username>/enterprise-ai-readiness-framework"
+Issues = "https://github.com/<your-username>/enterprise-ai-readiness-framework/issues"
 
 [tool.setuptools.package-data]
-earf = ["rules/catalog/*.yaml", "rules/catalog/*.yml"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-
-[tool.ruff]
-line-length = 88
-
-[tool.mypy]
-python_version = 3.11
-ignore_missing_imports = true
-
-[project.optional-dependencies]
-dev = [
-	"pytest>=7.0",
-	"pytest-cov",
-	"ruff",
-	"mypy",
-	"build",
-	"twine",
+earf = [
+  "rules/**/*.yaml",
+  "rules/**/*.yml"
 ]
