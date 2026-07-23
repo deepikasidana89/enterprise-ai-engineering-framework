@@ -1,0 +1,518 @@
+{
+  "repository_name": "enterprise-ai-readiness-framework",
+  "generated_at": "2026-07-23T15:45:07Z",
+  "earf_version": "0.1.0.dev0",
+  "overall_score": 11.1,
+  "production_status": "NOT_READY",
+  "category_scores": {
+    "evaluation": 0.0,
+    "governance": 36.4,
+    "modeling": 36.4,
+    "observability": 0.0,
+    "reliability": 0.0,
+    "safety": 0.0,
+    "security": 0.0
+  },
+  "summary": {
+    "passed": 2,
+    "failed": 10,
+    "not_applicable": 0,
+    "disabled": 0,
+    "errors": 0,
+    "critical_failures": 1,
+    "high_failures": 6
+  },
+  "total_evidence": 9,
+  "rule_results": [
+    {
+      "rule_id": "EVA-001",
+      "title": "AI behavior has automated evaluations",
+      "category": "evaluation",
+      "severity": "high",
+      "status": "FAIL",
+      "message": "Missing required evidence.",
+      "recommendation": "Add repeatable AI evaluation tests to CI workflows.",
+      "error": null,
+      "missing_requirements": [
+        "Missing requirement: evidence_type=workflow, identifiers=['ci.yaml', 'ci.yml', 'evaluation.yaml', 'evaluation.yml']"
+      ]
+    },
+    {
+      "rule_id": "GOV-001",
+      "title": "AI ownership documented",
+      "category": "governance",
+      "severity": "high",
+      "status": "FAIL",
+      "message": "Missing required evidence.",
+      "recommendation": "Document the owner and escalation path.",
+      "error": null,
+      "missing_requirements": [
+        "Missing requirement: evidence_type=file, identifiers=['CODEOWNERS']"
+      ]
+    },
+    {
+      "rule_id": "GOV-002",
+      "title": "AI purpose documented",
+      "category": "governance",
+      "severity": "medium",
+      "status": "PASS",
+      "message": "Matched required evidence.",
+      "recommendation": "Add documentation describing intended use and boundaries.",
+      "error": null,
+      "missing_requirements": []
+    },
+    {
+      "rule_id": "MOD-001",
+      "title": "Model or provider configured",
+      "category": "modeling",
+      "severity": "high",
+      "status": "FAIL",
+      "message": "Missing required evidence.",
+      "recommendation": "Add explicit model/provider configuration settings.",
+      "error": null,
+      "missing_requirements": [
+        "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'litellm', 'openai'], path=['requirements.txt']",
+        "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'litellm', 'openai'], path=['pyproject.toml']"
+      ]
+    },
+    {
+      "rule_id": "MOD-002",
+      "title": "Model version documented",
+      "category": "modeling",
+      "severity": "medium",
+      "status": "PASS",
+      "message": "Matched required evidence.",
+      "recommendation": "Document model versions and update procedures.",
+      "error": null,
+      "missing_requirements": []
+    },
+    {
+      "rule_id": "OBS-001",
+      "title": "AI interactions produce logs or telemetry",
+      "category": "observability",
+      "severity": "medium",
+      "status": "FAIL",
+      "message": "Missing required evidence.",
+      "recommendation": "Add structured logs and telemetry for AI interactions.",
+      "error": null,
+      "missing_requirements": [
+        "Missing requirement: evidence_type=dependency, identifiers=['loguru', 'opentelemetry-api', 'opentelemetry-sdk', 'prometheus-client', 'structlog'], path=['requirements.txt']",
+        "Missing requirement: evidence_type=dependency, identifiers=['loguru', 'opentelemetry-api', 'opentelemetry-sdk', 'prometheus-client', 'structlog'], path=['pyproject.toml']"
+      ]
+    },
+    {
+      "rule_id": "REL-001",
+      "title": "Model calls define timeouts",
+      "category": "reliability",
+      "severity": "medium",
+      "status": "FAIL",
+      "message": "Missing required evidence.",
+      "recommendation": "Set timeout values for all model calls.",
+      "error": null,
+      "missing_requirements": [
+        "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'httpx', 'openai', 'requests'], path=['requirements.txt']",
+        "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'httpx', 'openai', 'requests'], path=['pyproject.toml']"
+      ]
+    },
+    {
+      "rule_id": "REL-002",
+      "title": "Model calls define retry or fallback",
+      "category": "reliability",
+      "severity": "medium",
+      "status": "FAIL",
+      "message": "Missing required evidence.",
+      "recommendation": "Implement bounded retries or alternate provider fallback.",
+      "error": null,
+      "missing_requirements": [
+        "Missing requirement: evidence_type=dependency, identifiers=['backoff', 'tenacity'], path=['requirements.txt']",
+        "Missing requirement: evidence_type=dependency, identifiers=['backoff', 'tenacity'], path=['pyproject.toml']"
+      ]
+    },
+    {
+      "rule_id": "SAF-001",
+      "title": "Input validation present",
+      "category": "safety",
+      "severity": "high",
+      "status": "FAIL",
+      "message": "Missing required evidence.",
+      "recommendation": "Add validation and sanitization checks for AI inputs.",
+      "error": null,
+      "missing_requirements": [
+        "Missing requirement: evidence_type=dependency, identifiers=['jsonschema', 'marshmallow', 'pydantic'], path=['requirements.txt']",
+        "Missing requirement: evidence_type=dependency, identifiers=['jsonschema', 'marshmallow', 'pydantic'], path=['pyproject.toml']"
+      ]
+    },
+    {
+      "rule_id": "SAF-002",
+      "title": "Output guardrails present",
+      "category": "safety",
+      "severity": "high",
+      "status": "FAIL",
+      "message": "Missing required evidence.",
+      "recommendation": "Add post-processing or policy checks for model outputs.",
+      "error": null,
+      "missing_requirements": [
+        "Missing requirement: evidence_type=dependency, identifiers=['guardrails-ai', 'llm-guard', 'presidio-analyzer'], path=['requirements.txt']",
+        "Missing requirement: evidence_type=dependency, identifiers=['guardrails-ai', 'llm-guard', 'presidio-analyzer'], path=['pyproject.toml']"
+      ]
+    },
+    {
+      "rule_id": "SEC-001",
+      "title": "Secrets are not hard-coded",
+      "category": "security",
+      "severity": "critical",
+      "status": "FAIL",
+      "message": "Missing required evidence.",
+      "recommendation": "Move secrets to environment variables or secret managers.",
+      "error": null,
+      "missing_requirements": [
+        "Missing requirement: evidence_type=file, identifiers=['.env.example', 'SECURITY.md']"
+      ]
+    },
+    {
+      "rule_id": "SEC-002",
+      "title": "Tool access uses least privilege",
+      "category": "security",
+      "severity": "high",
+      "status": "FAIL",
+      "message": "Missing required evidence.",
+      "recommendation": "Restrict tool scopes and runtime permissions.",
+      "error": null,
+      "missing_requirements": [
+        "Missing requirement: evidence_type=file, identifiers=['CODEOWNERS']",
+        "Missing requirement: evidence_type=workflow, identifiers=['ci.yaml', 'ci.yml']"
+      ]
+    }
+  ],
+  "critical_findings": [
+    {
+      "rule_id": "SEC-001",
+      "title": "Secrets are not hard-coded"
+    }
+  ],
+  "high_findings": [
+    {
+      "rule_id": "EVA-001",
+      "title": "AI behavior has automated evaluations"
+    },
+    {
+      "rule_id": "GOV-001",
+      "title": "AI ownership documented"
+    },
+    {
+      "rule_id": "MOD-001",
+      "title": "Model or provider configured"
+    },
+    {
+      "rule_id": "SAF-001",
+      "title": "Input validation present"
+    },
+    {
+      "rule_id": "SAF-002",
+      "title": "Output guardrails present"
+    },
+    {
+      "rule_id": "SEC-002",
+      "title": "Tool access uses least privilege"
+    }
+  ],
+  "recommendations": [
+    {
+      "rule_id": "EVA-001",
+      "title": "AI behavior has automated evaluations",
+      "recommendation": "Add repeatable AI evaluation tests to CI workflows."
+    },
+    {
+      "rule_id": "GOV-001",
+      "title": "AI ownership documented",
+      "recommendation": "Document the owner and escalation path."
+    },
+    {
+      "rule_id": "MOD-001",
+      "title": "Model or provider configured",
+      "recommendation": "Add explicit model/provider configuration settings."
+    },
+    {
+      "rule_id": "OBS-001",
+      "title": "AI interactions produce logs or telemetry",
+      "recommendation": "Add structured logs and telemetry for AI interactions."
+    },
+    {
+      "rule_id": "REL-001",
+      "title": "Model calls define timeouts",
+      "recommendation": "Set timeout values for all model calls."
+    },
+    {
+      "rule_id": "REL-002",
+      "title": "Model calls define retry or fallback",
+      "recommendation": "Implement bounded retries or alternate provider fallback."
+    },
+    {
+      "rule_id": "SAF-001",
+      "title": "Input validation present",
+      "recommendation": "Add validation and sanitization checks for AI inputs."
+    },
+    {
+      "rule_id": "SAF-002",
+      "title": "Output guardrails present",
+      "recommendation": "Add post-processing or policy checks for model outputs."
+    },
+    {
+      "rule_id": "SEC-001",
+      "title": "Secrets are not hard-coded",
+      "recommendation": "Move secrets to environment variables or secret managers."
+    },
+    {
+      "rule_id": "SEC-002",
+      "title": "Tool access uses least privilege",
+      "recommendation": "Restrict tool scopes and runtime permissions."
+    }
+  ],
+  "metadata": {
+    "rule_details": [
+      {
+        "rule_id": "EVA-001",
+        "title": "AI behavior has automated evaluations",
+        "category": "evaluation",
+        "severity": "high",
+        "status": "FAIL",
+        "message": "Missing required evidence.",
+        "recommendation": "Add repeatable AI evaluation tests to CI workflows.",
+        "error": null,
+        "missing_requirements": [
+          "Missing requirement: evidence_type=workflow, identifiers=['ci.yaml', 'ci.yml', 'evaluation.yaml', 'evaluation.yml']"
+        ]
+      },
+      {
+        "rule_id": "GOV-001",
+        "title": "AI ownership documented",
+        "category": "governance",
+        "severity": "high",
+        "status": "FAIL",
+        "message": "Missing required evidence.",
+        "recommendation": "Document the owner and escalation path.",
+        "error": null,
+        "missing_requirements": [
+          "Missing requirement: evidence_type=file, identifiers=['CODEOWNERS']"
+        ]
+      },
+      {
+        "rule_id": "GOV-002",
+        "title": "AI purpose documented",
+        "category": "governance",
+        "severity": "medium",
+        "status": "PASS",
+        "message": "Matched required evidence.",
+        "recommendation": "Add documentation describing intended use and boundaries.",
+        "error": null,
+        "missing_requirements": []
+      },
+      {
+        "rule_id": "MOD-001",
+        "title": "Model or provider configured",
+        "category": "modeling",
+        "severity": "high",
+        "status": "FAIL",
+        "message": "Missing required evidence.",
+        "recommendation": "Add explicit model/provider configuration settings.",
+        "error": null,
+        "missing_requirements": [
+          "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'litellm', 'openai'], path=['requirements.txt']",
+          "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'litellm', 'openai'], path=['pyproject.toml']"
+        ]
+      },
+      {
+        "rule_id": "MOD-002",
+        "title": "Model version documented",
+        "category": "modeling",
+        "severity": "medium",
+        "status": "PASS",
+        "message": "Matched required evidence.",
+        "recommendation": "Document model versions and update procedures.",
+        "error": null,
+        "missing_requirements": []
+      },
+      {
+        "rule_id": "OBS-001",
+        "title": "AI interactions produce logs or telemetry",
+        "category": "observability",
+        "severity": "medium",
+        "status": "FAIL",
+        "message": "Missing required evidence.",
+        "recommendation": "Add structured logs and telemetry for AI interactions.",
+        "error": null,
+        "missing_requirements": [
+          "Missing requirement: evidence_type=dependency, identifiers=['loguru', 'opentelemetry-api', 'opentelemetry-sdk', 'prometheus-client', 'structlog'], path=['requirements.txt']",
+          "Missing requirement: evidence_type=dependency, identifiers=['loguru', 'opentelemetry-api', 'opentelemetry-sdk', 'prometheus-client', 'structlog'], path=['pyproject.toml']"
+        ]
+      },
+      {
+        "rule_id": "REL-001",
+        "title": "Model calls define timeouts",
+        "category": "reliability",
+        "severity": "medium",
+        "status": "FAIL",
+        "message": "Missing required evidence.",
+        "recommendation": "Set timeout values for all model calls.",
+        "error": null,
+        "missing_requirements": [
+          "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'httpx', 'openai', 'requests'], path=['requirements.txt']",
+          "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'httpx', 'openai', 'requests'], path=['pyproject.toml']"
+        ]
+      },
+      {
+        "rule_id": "REL-002",
+        "title": "Model calls define retry or fallback",
+        "category": "reliability",
+        "severity": "medium",
+        "status": "FAIL",
+        "message": "Missing required evidence.",
+        "recommendation": "Implement bounded retries or alternate provider fallback.",
+        "error": null,
+        "missing_requirements": [
+          "Missing requirement: evidence_type=dependency, identifiers=['backoff', 'tenacity'], path=['requirements.txt']",
+          "Missing requirement: evidence_type=dependency, identifiers=['backoff', 'tenacity'], path=['pyproject.toml']"
+        ]
+      },
+      {
+        "rule_id": "SAF-001",
+        "title": "Input validation present",
+        "category": "safety",
+        "severity": "high",
+        "status": "FAIL",
+        "message": "Missing required evidence.",
+        "recommendation": "Add validation and sanitization checks for AI inputs.",
+        "error": null,
+        "missing_requirements": [
+          "Missing requirement: evidence_type=dependency, identifiers=['jsonschema', 'marshmallow', 'pydantic'], path=['requirements.txt']",
+          "Missing requirement: evidence_type=dependency, identifiers=['jsonschema', 'marshmallow', 'pydantic'], path=['pyproject.toml']"
+        ]
+      },
+      {
+        "rule_id": "SAF-002",
+        "title": "Output guardrails present",
+        "category": "safety",
+        "severity": "high",
+        "status": "FAIL",
+        "message": "Missing required evidence.",
+        "recommendation": "Add post-processing or policy checks for model outputs.",
+        "error": null,
+        "missing_requirements": [
+          "Missing requirement: evidence_type=dependency, identifiers=['guardrails-ai', 'llm-guard', 'presidio-analyzer'], path=['requirements.txt']",
+          "Missing requirement: evidence_type=dependency, identifiers=['guardrails-ai', 'llm-guard', 'presidio-analyzer'], path=['pyproject.toml']"
+        ]
+      },
+      {
+        "rule_id": "SEC-001",
+        "title": "Secrets are not hard-coded",
+        "category": "security",
+        "severity": "critical",
+        "status": "FAIL",
+        "message": "Missing required evidence.",
+        "recommendation": "Move secrets to environment variables or secret managers.",
+        "error": null,
+        "missing_requirements": [
+          "Missing requirement: evidence_type=file, identifiers=['.env.example', 'SECURITY.md']"
+        ]
+      },
+      {
+        "rule_id": "SEC-002",
+        "title": "Tool access uses least privilege",
+        "category": "security",
+        "severity": "high",
+        "status": "FAIL",
+        "message": "Missing required evidence.",
+        "recommendation": "Restrict tool scopes and runtime permissions.",
+        "error": null,
+        "missing_requirements": [
+          "Missing requirement: evidence_type=file, identifiers=['CODEOWNERS']",
+          "Missing requirement: evidence_type=workflow, identifiers=['ci.yaml', 'ci.yml']"
+        ]
+      }
+    ],
+    "critical_findings": [
+      {
+        "rule_id": "SEC-001",
+        "title": "Secrets are not hard-coded"
+      }
+    ],
+    "high_findings": [
+      {
+        "rule_id": "EVA-001",
+        "title": "AI behavior has automated evaluations"
+      },
+      {
+        "rule_id": "GOV-001",
+        "title": "AI ownership documented"
+      },
+      {
+        "rule_id": "MOD-001",
+        "title": "Model or provider configured"
+      },
+      {
+        "rule_id": "SAF-001",
+        "title": "Input validation present"
+      },
+      {
+        "rule_id": "SAF-002",
+        "title": "Output guardrails present"
+      },
+      {
+        "rule_id": "SEC-002",
+        "title": "Tool access uses least privilege"
+      }
+    ],
+    "recommendations": [
+      {
+        "rule_id": "EVA-001",
+        "title": "AI behavior has automated evaluations",
+        "recommendation": "Add repeatable AI evaluation tests to CI workflows."
+      },
+      {
+        "rule_id": "GOV-001",
+        "title": "AI ownership documented",
+        "recommendation": "Document the owner and escalation path."
+      },
+      {
+        "rule_id": "MOD-001",
+        "title": "Model or provider configured",
+        "recommendation": "Add explicit model/provider configuration settings."
+      },
+      {
+        "rule_id": "OBS-001",
+        "title": "AI interactions produce logs or telemetry",
+        "recommendation": "Add structured logs and telemetry for AI interactions."
+      },
+      {
+        "rule_id": "REL-001",
+        "title": "Model calls define timeouts",
+        "recommendation": "Set timeout values for all model calls."
+      },
+      {
+        "rule_id": "REL-002",
+        "title": "Model calls define retry or fallback",
+        "recommendation": "Implement bounded retries or alternate provider fallback."
+      },
+      {
+        "rule_id": "SAF-001",
+        "title": "Input validation present",
+        "recommendation": "Add validation and sanitization checks for AI inputs."
+      },
+      {
+        "rule_id": "SAF-002",
+        "title": "Output guardrails present",
+        "recommendation": "Add post-processing or policy checks for model outputs."
+      },
+      {
+        "rule_id": "SEC-001",
+        "title": "Secrets are not hard-coded",
+        "recommendation": "Move secrets to environment variables or secret managers."
+      },
+      {
+        "rule_id": "SEC-002",
+        "title": "Tool access uses least privilege",
+        "recommendation": "Restrict tool scopes and runtime permissions."
+      }
+    ]
+  }
+}

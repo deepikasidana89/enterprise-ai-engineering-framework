@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 from typer.testing import CliRunner
 
@@ -76,61 +77,61 @@ rules:
 
 
 def _score_rules_yaml() -> str:
-        return "\n".join(
-                [
-                        "rules:",
-                        "  - id: GOV-001",
-                        "    title: Readme exists",
-                        "    description: Repository has readme",
-                        "    category: governance",
-                        "    severity: high",
-                        "    version: \"1.0\"",
-                        "    enabled: true",
-                        "    applicability: {always: true}",
-                        "    rationale: why",
-                        "    recommendation: do",
-                        "    tags: []",
-                        "    references: []",
-                        "    evidence_requirements:",
-                        "      evidence_type: file",
-                        "      identifiers: [README.md]",
-                        "    metadata: {}",
-                        "",
-                        "  - id: SEC-001",
-                        "    title: Security file exists",
-                        "    description: Repository has security file",
-                        "    category: security",
-                        "    severity: medium",
-                        "    version: \"1.0\"",
-                        "    enabled: true",
-                        "    applicability: {always: true}",
-                        "    rationale: why",
-                        "    recommendation: do",
-                        "    tags: []",
-                        "    references: []",
-                        "    evidence_requirements:",
-                        "      evidence_type: file",
-                        "      identifiers: [SECURITY.md]",
-                        "    metadata: {}",
-                        "",
-                        "  - id: REL-001",
-                        "    title: Dockerfile exists",
-                        "    description: Repository has Dockerfile",
-                        "    category: reliability",
-                        "    severity: low",
-                        "    version: \"1.0\"",
-                        "    enabled: true",
-                        "    applicability: {always: true}",
-                        "    rationale: why",
-                        "    recommendation: do",
-                        "    tags: []",
-                        "    references: []",
-                        "    evidence_requirements:",
-                        "      evidence_type: file",
-                        "      identifiers: [Dockerfile]",
-                        "    metadata: {}",
-                ]
-        )
+    return "\n".join(
+        [
+            "rules:",
+            "  - id: GOV-001",
+            "    title: Readme exists",
+            "    description: Repository has readme",
+            "    category: governance",
+            "    severity: high",
+            "    version: \"1.0\"",
+            "    enabled: true",
+            "    applicability: {always: true}",
+            "    rationale: why",
+            "    recommendation: do",
+            "    tags: []",
+            "    references: []",
+            "    evidence_requirements:",
+            "      evidence_type: file",
+            "      identifiers: [README.md]",
+            "    metadata: {}",
+            "",
+            "  - id: SEC-001",
+            "    title: Security file exists",
+            "    description: Repository has security file",
+            "    category: security",
+            "    severity: medium",
+            "    version: \"1.0\"",
+            "    enabled: true",
+            "    applicability: {always: true}",
+            "    rationale: why",
+            "    recommendation: do",
+            "    tags: []",
+            "    references: []",
+            "    evidence_requirements:",
+            "      evidence_type: file",
+            "      identifiers: [SECURITY.md]",
+            "    metadata: {}",
+            "",
+            "  - id: REL-001",
+            "    title: Dockerfile exists",
+            "    description: Repository has Dockerfile",
+            "    category: reliability",
+            "    severity: low",
+            "    version: \"1.0\"",
+            "    enabled: true",
+            "    applicability: {always: true}",
+            "    rationale: why",
+            "    recommendation: do",
+            "    tags: []",
+            "    references: []",
+            "    evidence_requirements:",
+            "      evidence_type: file",
+            "      identifiers: [Dockerfile]",
+            "    metadata: {}",
+        ]
+    )
 
 
 def test_version_command() -> None:
@@ -275,6 +276,64 @@ def test_evidence_command_summary(tmp_path: Path) -> None:
     assert "Total Evidence: 5" in result.stdout
 
 
+def _report_rules_yaml() -> str:
+    return "\n".join(
+        [
+            "rules:",
+            "  - id: GOV-001",
+            "    title: Ownership documented",
+            "    description: Repository has owner file",
+            "    category: governance",
+            "    severity: high",
+            "    version: \"1.0\"",
+            "    enabled: true",
+            "    applicability: {always: true}",
+            "    rationale: why",
+            "    recommendation: Add CODEOWNERS or OWNERS.",
+            "    tags: []",
+            "    references: []",
+            "    evidence_requirements:",
+            "      evidence_type: file",
+            "      identifiers: [CODEOWNERS]",
+            "    metadata: {}",
+            "",
+            "  - id: SAF-001",
+            "    title: Input validation present",
+            "    description: Repository validates inputs",
+            "    category: safety",
+            "    severity: critical",
+            "    version: \"1.0\"",
+            "    enabled: true",
+            "    applicability: {always: true}",
+            "    rationale: why",
+            "    recommendation: Implement input validation.",
+            "    tags: []",
+            "    references: []",
+            "    evidence_requirements:",
+            "      evidence_type: file",
+            "      identifiers: [SECURITY.md]",
+            "    metadata: {}",
+            "",
+            "  - id: REL-001",
+            "    title: Timeouts defined",
+            "    description: Repository defines timeouts",
+            "    category: reliability",
+            "    severity: high",
+            "    version: \"1.0\"",
+            "    enabled: true",
+            "    applicability: {always: true}",
+            "    rationale: why",
+            "    recommendation: Add timeouts.",
+            "    tags: []",
+            "    references: []",
+            "    evidence_requirements:",
+            "      evidence_type: file",
+            "      identifiers: [Dockerfile]",
+            "    metadata: {}",
+        ]
+    )
+
+
 def test_evidence_command_empty_repository(tmp_path: Path) -> None:
     result = runner.invoke(app, ["evidence", str(tmp_path)])
 
@@ -385,3 +444,113 @@ def test_score_command_mixed_repository(tmp_path: Path) -> None:
     assert "READY_WITH_WARNINGS" in result.stdout
     assert "Passed: 2" in result.stdout
     assert "Failed: 1" in result.stdout
+
+
+def test_report_command_console_output(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_report_rules_yaml(), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["report", str(tmp_path), "--rules-path", str(rules_dir)])
+
+    assert result.exit_code == 0
+    assert "EARF Enterprise AI Readiness Report" in result.stdout
+    assert "Overall Readiness" in result.stdout
+    assert "Production Status" in result.stdout
+    assert "Critical Findings" in result.stdout
+    assert "SAF-001" in result.stdout
+    assert "High Findings" in result.stdout
+    assert "REL-001" in result.stdout
+    assert "Recommendations" in result.stdout
+
+
+def test_report_command_json_writes_file(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_report_rules_yaml(), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        ["report", str(tmp_path), "--rules-path", str(rules_dir), "--format", "json"],
+    )
+
+    assert result.exit_code == 0
+    output_path = tmp_path / "earf-report.json"
+    assert output_path.is_file()
+    assert "Report written to: earf-report.json" in result.stdout
+    parsed = json.loads(output_path.read_text(encoding="utf-8"))
+    assert parsed["repository_name"] == tmp_path.name
+
+
+def test_report_command_markdown_writes_file(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_report_rules_yaml(), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        ["report", str(tmp_path), "--rules-path", str(rules_dir), "--format", "markdown"],
+    )
+
+    assert result.exit_code == 0
+    output_path = tmp_path / "EARF_REPORT.md"
+    assert output_path.is_file()
+    assert "Report written to: EARF_REPORT.md" in result.stdout
+
+
+def test_report_command_custom_output_path(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_report_rules_yaml(), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    output_path = tmp_path / "custom-report.json"
+
+    result = runner.invoke(
+        app,
+        [
+            "report",
+            str(tmp_path),
+            "--rules-path",
+            str(rules_dir),
+            "--format",
+            "json",
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert output_path.is_file()
+    assert f"Report written to: {output_path}" in result.stdout
+
+
+def test_report_command_rejects_output_with_console(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_report_rules_yaml(), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "report",
+            str(tmp_path),
+            "--rules-path",
+            str(rules_dir),
+            "--format",
+            "console",
+            "--output",
+            "report.txt",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--output is not supported with console format" in result.stdout

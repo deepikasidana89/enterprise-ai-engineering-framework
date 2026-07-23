@@ -76,7 +76,7 @@ The Enterprise AI Readiness Framework (EARF) aims to provide engineering leaders
 3. Allocate 4-6 weeks for comprehensive assessment
 4. Plan improvement roadmap based on findings
 
-## CLI (Phase 5)
+## CLI (Phase 6)
 
 EARF currently supports:
 
@@ -85,6 +85,7 @@ EARF currently supports:
 - `earf evidence PATH` — collect deterministic repository evidence only
 - `earf evaluate PATH [--show-evidence]` — evaluate rules against collected evidence
 - `earf score PATH [--rules-path PATH]` — calculate weighted readiness score from `RuleResult` values
+- `earf report PATH [--rules-path PATH] [--format console|json|markdown] [--output PATH]` — generate a readiness report
 - `earf rules list [--path PATH]` — list loaded rules
 - `earf rules validate [--path PATH]` — validate YAML rule catalog
 - `earf rules show RULE_ID [--path PATH]` — show one rule definition
@@ -117,7 +118,8 @@ Phase 4.5+ evaluation and scoring scope:
 	- `READY` if no critical failures and overall score >= 85
 	- `READY_WITH_WARNINGS` if no critical failures and overall score >= 70
 	- `NOT_READY` otherwise
-- No report generation, SARIF/JSON export, or GitHub Action integration is included.
+- Report generation and export are limited to console, JSON, and Markdown output.
+- No SARIF export, GitHub Action integration, or LLM support is included.
 - No LLM, RAG, embedding, regex scanning, AST analysis, or secret/prompt detection is included.
 
 Evaluation pipeline:
@@ -142,6 +144,82 @@ Example:
 
 ```bash
 python -m earf score .
+```
+
+Report generation:
+
+```bash
+python -m earf report .
+python -m earf report . --format json
+python -m earf report . --format markdown
+python -m earf report . --format json --output report.json
+python -m earf report . --format markdown --output report.md
+```
+
+Default report filenames:
+
+- JSON: `earf-report.json`
+- Markdown: `EARF_REPORT.md`
+
+Console example:
+
+```text
+EARF Enterprise AI Readiness Report
+
+Repository: enterprise-ai-readiness-framework
+Generated: 2026-07-22T00:00:00Z
+EARF Version: 0.1.0-dev
+
+Overall Readiness
+
+11.1 / 100
+```
+
+Report JSON schema overview:
+
+- `repository_name`
+- `generated_at`
+- `earf_version`
+- `overall_score`
+- `production_status`
+- `total_evidence`
+- `metadata`
+- `category_scores`
+- `rule_results`
+- `summary`
+- `critical_findings`
+- `high_findings`
+- `recommendations`
+
+JSON example:
+
+```json
+{
+	"repository_name": "enterprise-ai-readiness-framework",
+	"generated_at": "2026-07-22T00:00:00Z",
+	"earf_version": "0.1.0-dev",
+	"overall_score": 11.1,
+	"production_status": "NOT_READY"
+}
+```
+
+Markdown reports include:
+
+- title and repository metadata
+- overall score and production readiness
+- category table
+- rule table
+- summary table
+- deterministic recommendations from the rule catalog
+
+Markdown example:
+
+```markdown
+# EARF Enterprise AI Readiness Report
+
+Repository: enterprise-ai-readiness-framework
+Generated: 2026-07-22T00:00:00Z
+EARF Version: 0.1.0-dev
 ```
 
 Note: EARF findings indicate the presence or absence of implementation evidence. They do not prove that a control is fully effective and do not constitute certification, compliance approval, legal advice, or security assurance.

@@ -6,22 +6,22 @@ from typing import Optional
 
 import typer
 
-from .repository import RepositoryLoader
 from . import __version__
-from .exceptions import (
-    InvalidRepositoryPathError,
-    RuleDefinitionError,
-)
-from .evidence_collection import EvidenceCollectionService
+from .exceptions import InvalidRepositoryPathError, RuleDefinitionError
 from .models import EvidenceType
-from .rules.evaluation_service import RuleEvaluationService
-from .rules.results import RuleStatus
+from .pipeline import EARFPipeline
+from .reporting import ReportWriter
+from .repository import RepositoryLoader
 from .rules.catalog import RuleCatalog
-from .scoring.service import ScoringService
+from .rules.results import RuleStatus
 
 app = typer.Typer(help="EARF CLI")
 rules_app = typer.Typer(help="Rule catalog commands")
 app.add_typer(rules_app, name="rules")
+
+
+def _pipeline(rules_path: Path | None = None) -> EARFPipeline:
+    return EARFPipeline(rules_path=rules_path or Path("rules"))
 
 
 @app.command()
@@ -34,8 +34,7 @@ def version() -> None:
 def scan(path: Path) -> None:
     """Load repository at PATH (Phase 1: scanning not implemented)."""
     try:
-        loader = RepositoryLoader()
-        context = loader.load(path)
+        context = RepositoryLoader().load(path)
         typer.echo("Repository loaded successfully.")
         typer.echo("")
         typer.echo(f"Project: {context.project_name}")
@@ -52,11 +51,9 @@ def scan(path: Path) -> None:
 def evidence(path: Path) -> None:
     """Collect repository evidence (Phase 3: collection only)."""
     try:
-        loader = RepositoryLoader()
-        context = loader.load(path)
-
-        service = EvidenceCollectionService()
-        repository = service.collect(context)
+        analysis = _pipeline().analyze(path)
+        context = analysis.repository_context
+        repository = analysis.evidence_repository
 
         file_count = len(repository.filter_by_type(EvidenceType.FILE))
         dependency_count = len(repository.filter_by_type(EvidenceType.DEPENDENCY))
@@ -97,12 +94,10 @@ def evaluate(
 ) -> None:
     """Evaluate rules against collected evidence (Phase 4: matching only)."""
     try:
-        loader = RepositoryLoader()
-        context = loader.load(path)
-
-        evidence_repository = EvidenceCollectionService().collect(context)
-        catalog, _ = RuleCatalog.from_path(rules_path)
-        results = RuleEvaluationService().evaluate_all(catalog, evidence_repository)
+        analysis = _pipeline(rules_path).analyze(path)
+        context = analysis.repository_context
+        catalog = analysis.rule_catalog
+        results = analysis.rule_results
 
         typer.echo(f"Repository: {context.project_name}")
         typer.echo("")
@@ -114,8 +109,7 @@ def evaluate(
         for result in results:
             title = rule_lookup.get(result.rule_id)
             title_text = title.title if title is not None else ""
-            status = result.status.name
-            typer.echo(f"{result.rule_id:<8} {status:<15} {title_text}")
+            typer.echo(f"{result.rule_id:<8} {result.status.name:<15} {title_text}")
             if show_evidence and result.matched_evidence:
                 matched_ids = ", ".join(e.identifier for e in result.matched_evidence)
                 typer.echo(f"  matched: {matched_ids}")
@@ -155,13 +149,9 @@ def score(
 ) -> None:
     """Calculate enterprise readiness score from rule evaluation results."""
     try:
-        loader = RepositoryLoader()
-        context = loader.load(path)
-
-        evidence_repository = EvidenceCollectionService().collect(context)
-        catalog, _ = RuleCatalog.from_path(rules_path)
-        results = RuleEvaluationService().evaluate_all(catalog, evidence_repository)
-        readiness = ScoringService().score(results, catalog)
+        analysis = _pipeline(rules_path).analyze(path)
+        context = analysis.repository_context
+        readiness = analysis.readiness_score
 
         typer.echo(f"Repository: {context.project_name}")
         typer.echo("")
@@ -175,8 +165,9 @@ def score(
         typer.echo("")
         typer.echo("Category Scores")
         typer.echo("")
-        for category, value in sorted(readiness.category_scores.items()):
-            typer.echo(f"{category:<15} {value:.1f}")
+        for category in readiness.category_ranking():
+            value = readiness.category_scores.get(category, 0.0)
+            typer.echo(f"{category.title():<16}{value:>7.1f}")
 
         typer.echo("")
         typer.echo("Summary")
@@ -188,6 +179,46 @@ def score(
         typer.echo(f"Errors: {readiness.error_rules}")
         typer.echo(f"Critical Failures: {readiness.critical_failures}")
         typer.echo(f"High Failures: {readiness.high_failures}")
+    except (InvalidRepositoryPathError, RuleDefinitionError) as exc:
+        typer.echo(f"Error: {exc}")
+        raise typer.Exit(code=2)
+
+
+@app.command()
+def report(
+    path: Path,
+    output_format: str = typer.Option("console", "--format", help="Report output format"),
+    output: Path | None = typer.Option(None, "--output", help="Output file for json or markdown reports"),
+    rules_path: Path = typer.Option(
+        Path("rules"),
+        "--rules-path",
+        help="Rules file or directory",
+    ),
+) -> None:
+    """Generate an enterprise AI readiness report."""
+    try:
+        analysis = _pipeline(rules_path).analyze(path)
+        report_model = analysis.readiness_report
+        assert report_model is not None
+        writer = ReportWriter()
+
+        selected_format = output_format.strip().lower()
+        if selected_format == "console":
+            if output is not None:
+                typer.echo("Error: --output is not supported with console format")
+                raise typer.Exit(code=2)
+            typer.echo(writer.render_console(report_model))
+        elif selected_format == "json":
+            output_path = output or Path("earf-report.json")
+            written = writer.write_json(report_model, output_path)
+            typer.echo(f"Report written to: {written}")
+        elif selected_format == "markdown":
+            output_path = output or Path("EARF_REPORT.md")
+            written = writer.write_markdown(report_model, output_path)
+            typer.echo(f"Report written to: {written}")
+        else:
+            typer.echo(f"Error: unsupported format {output_format!r}")
+            raise typer.Exit(code=2)
     except (InvalidRepositoryPathError, RuleDefinitionError) as exc:
         typer.echo(f"Error: {exc}")
         raise typer.Exit(code=2)
@@ -264,6 +295,5 @@ def main(argv: Optional[list[str]] | None = None) -> int:
     try:
         app(argv or sys.argv[1:])
     except SystemExit:
-        # typer uses SystemExit, re-raise to preserve exit code
         raise
     return 0
