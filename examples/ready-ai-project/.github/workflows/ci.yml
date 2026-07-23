@@ -1,0 +1,10 @@
+name: Example CI
+
+on:
+  push:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "example workflow"

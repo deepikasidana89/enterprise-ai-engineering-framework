@@ -1,0 +1,32 @@
+name: EARF Scan
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install EARF
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+
+      - name: Generate EARF markdown report
+        run: earf report . --format markdown --output EARF_REPORT.md
+
+      - name: Upload EARF report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: earf-report-markdown
+          path: EARF_REPORT.md

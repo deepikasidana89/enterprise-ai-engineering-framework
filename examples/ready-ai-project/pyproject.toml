@@ -1,0 +1,10 @@
+[project]
+name = "ready-ai-project"
+version = "0.1.0"
+dependencies = [
+  "openai>=1.0",
+  "pydantic>=2.8",
+  "guardrails-ai>=0.5",
+  "tenacity>=8.2",
+  "opentelemetry-sdk>=1.0",
+]

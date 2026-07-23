@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+title: Enterprise AI Readiness Framework (EARF)
+message: "If you use this project, please cite it using this metadata."
+authors:
+  - family-names: Sidana
+    given-names: Deepika
+version: 0.7.0
+date-released: 2026-07-23
+url: https://github.com/<owner>/enterprise-ai-readiness-framework

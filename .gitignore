@@ -15,7 +15,20 @@ venv/
 
 # Coverage
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Generated EARF reports
+EARF_REPORT.md
+earf-report.json
+report.json
+report.html
 
 # macOS
 .DS_Store

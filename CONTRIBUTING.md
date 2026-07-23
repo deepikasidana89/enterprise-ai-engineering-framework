@@ -1,151 +1,49 @@
-# Contributing to Enterprise AI Readiness Framework
+# Contributing
 
-Thank you for your interest in contributing to EARF! This framework is a community effort and we welcome contributions of all kinds.
+Thanks for your interest in contributing to EARF.
 
----
+## How to Contribute
 
-## Ways to Contribute
+1. Fork the repository and create a feature branch.
+2. Make focused changes with tests when behavior changes.
+3. Run local checks.
+4. Open a pull request with a clear summary.
 
-### 1. Share Assessment Results
-Have you used EARF to assess your organization? We'd love to hear about it!
-
-**How to contribute:**
-- Create a summary of your assessment (keep sensitive details private)
-- Include your overall score, pillar breakdown, and key findings
-- Share lessons learned and improvement roadmap highlights
-- Add as a new example in `/examples` folder
-
-**Benefits:**
-- Help others see real-world examples
-- Identify patterns across organizations
-- Validate framework effectiveness
-
----
-
-### 2. Suggest Improvements
-Found something unclear or missing? Help us improve!
-
-**Types of feedback we welcome:**
-- Unclear assessment questions - suggest clarifications
-- Missing assessment areas - propose new questions
-- Scoring methodology improvements - suggest better calculation methods
-- Process improvements - recommend assessment workflow changes
-
-**How to contribute:**
-- Open an issue describing the improvement
-- Provide specific examples
-- Suggest concrete changes
-
----
-
-### 3. Share Best Practices
-Have proven practices that improve AI readiness? Share them!
-
-**What we're looking for:**
-- Implementation templates (e.g., monitoring setup guide)
-- Tool recommendations for specific pillars
-- Real-world runbooks and procedures
-- Process templates and checklists
-- Automation scripts and utilities
-
-**How to contribute:**
-- Create a detailed guide in `/tools` or `/articles`
-- Include step-by-step instructions
-- Provide examples and screenshots
-- Document prerequisites and assumptions
-
----
-
-### 4. Improve Documentation
-Help make the framework more accessible and clear.
-
-**Improvement opportunities:**
-- Fix typos, grammar, and clarity issues
-- Add diagrams and visual aids
-- Improve navigation and cross-references
-- Create video explanations
-
-**How to contribute:**
-- Suggest content improvements in issues
-- Submit pull requests with edits
-- Create tutorials
-
----
-
-### 5. Create Tools and Automation
-Help automate assessment and tracking processes.
-
-**Tool ideas:**
-- Assessment scoring calculator (Excel/Google Sheets)
-- Score tracking dashboard template
-- Python scripts for assessment automation
-- Roadmap planning tools
-- Progress tracking templates
-
-**How to contribute:**
-- Add tools to `/tools` folder
-- Include documentation and usage instructions
-
----
-
-## Contribution Process
-
-### For Small Changes
-1. Fork the repository
-2. Create a feature branch
-3. Make changes
-4. Commit with clear message
-5. Push to your branch
-6. Open a Pull Request
-
-### For Significant Contributions
-1. Open an issue first describing your contribution
-2. Get feedback from maintainers
-3. Implement contribution
-4. Submit pull request with clear documentation
-
----
-
-## Contribution Guidelines
-
-### Quality Standards
-- **Clarity:** Write clearly for practitioners
-- **Accuracy:** Base contributions on experience or research
-- **Completeness:** Include examples and supporting details
-- **Consistency:** Follow existing framework structure
-- **Actionability:** Provide specific, implementable guidance
-
----
-
-## Recognition
-
-Contributors will be recognized in:
-- Git commit history
-- GitHub contributors page
-- Acknowledgments section
-
----
-
-## License
-
-By contributing to this project, you agree that your contributions will be licensed under the MIT License.
-
-## Local development
-
-To set up a local editable environment and run tests:
+## Local Development
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
+```
+
+Run checks before opening a PR:
+
+```bash
 pytest
 ruff check .
 mypy src/earf
 ```
 
-Run the CLI during development with:
+## Scope and Architecture Boundaries
 
-```bash
-earf version
-earf scan .
-```
+- Keep collectors focused on deterministic fact collection.
+- Keep rule definitions declarative in YAML.
+- Keep scoring logic in the scoring layer.
+- Avoid unrelated refactors in contribution PRs.
 
-Please include tests for any substantive change and follow the repository's architecture boundaries: collectors capture facts only, and rule logic must remain in rule loaders/engines.
+## Pull Request Guidelines
+
+- Use descriptive commit messages.
+- Include tests for new behavior when practical.
+- Update docs when CLI behavior or workflows change.
+- Keep PRs small and reviewable.
+
+## Code of Conduct
+
+By participating, you agree to follow `CODE_OF_CONDUCT.md`.
+
+## License
+
+By contributing, you agree that contributions are provided under the MIT License.
