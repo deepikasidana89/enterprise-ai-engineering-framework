@@ -9,6 +9,7 @@ from .models import RepositoryContext
 from .repository import RepositoryLoader
 from .reporting.builder import ReportBuilder
 from .reporting.models import ReadinessReport
+from .rules.builtin import built_in_rules_path
 from .rules.catalog import RuleCatalog
 from .rules.evaluation_service import RuleEvaluationService
 from .rules.loader import RuleLoader
@@ -37,7 +38,7 @@ class EARFPipeline:
         rule_evaluation_service: RuleEvaluationService | None = None,
         scoring_service: ScoringService | None = None,
         report_builder: ReportBuilder | None = None,
-        rules_path: Path = Path("rules"),
+        rules_path: Path | None = None,
     ) -> None:
         self._repository_loader = repository_loader or RepositoryLoader()
         self._evidence_service = evidence_service or EvidenceCollectionService()
@@ -45,7 +46,16 @@ class EARFPipeline:
         self._rule_evaluation_service = rule_evaluation_service or RuleEvaluationService()
         self._scoring_service = scoring_service or ScoringService()
         self._report_builder = report_builder or ReportBuilder()
-        self._rules_path = rules_path
+        self._rules_path = self._resolve_rules_path(rules_path)
+
+    def _resolve_rules_path(self, rules_path: Path | None) -> Path:
+        if rules_path is not None:
+            return rules_path
+
+        local_rules = Path("rules")
+        if local_rules.exists():
+            return local_rules
+        return built_in_rules_path()
 
     def analyze(self, repository_path: Path) -> AnalysisResult:
         repository_context = self._repository_loader.load(repository_path)

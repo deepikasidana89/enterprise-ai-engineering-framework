@@ -1,0 +1,40 @@
+rules:
+  - id: SEC-001
+    title: Secrets are not hard-coded
+    description: Credentials and secrets are managed outside source code.
+    category: security
+    severity: critical
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Hard-coded secrets create high-impact compromise risk.
+    recommendation: Move secrets to environment variables or secret managers.
+    tags: [security, secrets]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: file
+          identifiers: [.env.example, SECURITY.md]
+    metadata: {}
+
+  - id: SEC-002
+    title: Tool access uses least privilege
+    description: AI tools and integrations run with constrained permissions.
+    category: security
+    severity: high
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Least privilege limits blast radius of compromised workflows.
+    recommendation: Restrict tool scopes and runtime permissions.
+    tags: [security, least-privilege]
+    references: []
+    evidence_requirements:
+      all:
+        - evidence_type: file
+          identifiers: [CODEOWNERS]
+        - evidence_type: workflow
+          identifiers: [ci.yml, ci.yaml]
+    metadata: {}

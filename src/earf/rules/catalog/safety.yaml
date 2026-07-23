@@ -1,0 +1,46 @@
+rules:
+  - id: SAF-001
+    title: Input validation present
+    description: AI input is validated or sanitized before model invocation.
+    category: safety
+    severity: high
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Input validation prevents unsafe or malformed requests.
+    recommendation: Add validation and sanitization checks for AI inputs.
+    tags: [safety, input-validation]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: dependency
+          path: requirements.txt
+          identifiers: [pydantic, jsonschema, marshmallow]
+        - evidence_type: dependency
+          path: pyproject.toml
+          identifiers: [pydantic, jsonschema, marshmallow]
+    metadata: {}
+
+  - id: SAF-002
+    title: Output guardrails present
+    description: AI output is filtered or constrained with safety guardrails.
+    category: safety
+    severity: high
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Output guardrails reduce harmful or policy-violating responses.
+    recommendation: Add post-processing or policy checks for model outputs.
+    tags: [safety, output-guardrails]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: dependency
+          path: requirements.txt
+          identifiers: [guardrails-ai, presidio-analyzer, llm-guard]
+        - evidence_type: dependency
+          path: pyproject.toml
+          identifiers: [guardrails-ai, presidio-analyzer, llm-guard]
+    metadata: {}

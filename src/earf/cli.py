@@ -21,7 +21,7 @@ app.add_typer(rules_app, name="rules")
 
 
 def _pipeline(rules_path: Path | None = None) -> EARFPipeline:
-    return EARFPipeline(rules_path=rules_path or Path("rules"))
+    return EARFPipeline(rules_path=rules_path)
 
 
 @app.command()
@@ -86,8 +86,8 @@ def evaluate(
         "--show-evidence",
         help="Show matched evidence identifiers per rule",
     ),
-    rules_path: Path = typer.Option(
-        Path("rules"),
+    rules_path: Path | None = typer.Option(
+        None,
         "--rules-path",
         help="Rules file or directory",
     ),
@@ -141,8 +141,8 @@ def evaluate(
 @app.command()
 def score(
     path: Path,
-    rules_path: Path = typer.Option(
-        Path("rules"),
+    rules_path: Path | None = typer.Option(
+        None,
         "--rules-path",
         help="Rules file or directory",
     ),
@@ -189,8 +189,8 @@ def report(
     path: Path,
     output_format: str = typer.Option("console", "--format", help="Report output format"),
     output: Path | None = typer.Option(None, "--output", help="Output file for json or markdown reports"),
-    rules_path: Path = typer.Option(
-        Path("rules"),
+    rules_path: Path | None = typer.Option(
+        None,
         "--rules-path",
         help="Rules file or directory",
     ),

@@ -1,0 +1,38 @@
+rules:
+  - id: GOV-001
+    title: AI ownership documented
+    description: The repository identifies an accountable AI system owner.
+    category: governance
+    severity: high
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Clear ownership improves accountability and response times.
+    recommendation: Document the owner and escalation path.
+    tags: [governance, ownership]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: file
+          identifiers: [CODEOWNERS]
+    metadata: {}
+
+  - id: GOV-002
+    title: AI purpose documented
+    description: The repository states the intended purpose and scope of the AI system.
+    category: governance
+    severity: medium
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Purpose and scope reduce misuse and ambiguity.
+    recommendation: Add documentation describing intended use and boundaries.
+    tags: [governance, documentation]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: file
+          identifiers: [README.md]
+    metadata: {}

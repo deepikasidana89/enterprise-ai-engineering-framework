@@ -1,0 +1,46 @@
+rules:
+  - id: REL-001
+    title: Model calls define timeouts
+    description: AI model invocations configure explicit timeout values.
+    category: reliability
+    severity: medium
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Timeouts prevent hangs and preserve service stability.
+    recommendation: Set timeout values for all model calls.
+    tags: [reliability, timeout]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: dependency
+          path: requirements.txt
+          identifiers: [httpx, requests, openai, anthropic]
+        - evidence_type: dependency
+          path: pyproject.toml
+          identifiers: [httpx, requests, openai, anthropic]
+    metadata: {}
+
+  - id: REL-002
+    title: Model calls define retry or fallback
+    description: AI model calls include retry strategy or fallback behavior.
+    category: reliability
+    severity: medium
+    version: "1.0"
+    enabled: true
+    applicability:
+      always: true
+    rationale: Retries and fallback reduce transient failure impact.
+    recommendation: Implement bounded retries or alternate provider fallback.
+    tags: [reliability, retry, fallback]
+    references: []
+    evidence_requirements:
+      any:
+        - evidence_type: dependency
+          path: requirements.txt
+          identifiers: [tenacity, backoff]
+        - evidence_type: dependency
+          path: pyproject.toml
+          identifiers: [tenacity, backoff]
+    metadata: {}
