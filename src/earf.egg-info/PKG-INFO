@@ -1,32 +1,31 @@
 Metadata-Version: 2.4
 Name: earf
 Version: 0.7.0
-Summary: Enterprise AI Readiness Framework for evaluating production readiness of AI systems
-Author: EARF Contributors
-License-Expression: MIT
-Project-URL: Homepage, https://github.com/deepikasidana89/enterprise-ai-readiness-framework
-Project-URL: Documentation, https://github.com/deepikasidana89/enterprise-ai-readiness-framework#readme
-Project-URL: Repository, https://github.com/deepikasidana89/enterprise-ai-readiness-framework
-Project-URL: Issues, https://github.com/deepikasidana89/enterprise-ai-readiness-framework/issues
-Keywords: ai,readiness,governance,risk,evaluation,llm
+Summary: Enterprise AI Readiness Framework for evaluating the production readiness of enterprise AI systems.
+Author: Deepika Sidana
+License: MIT
+Project-URL: Homepage, https://github.com/<your-username>/enterprise-ai-readiness-framework
+Project-URL: Repository, https://github.com/<your-username>/enterprise-ai-readiness-framework
+Project-URL: Issues, https://github.com/<your-username>/enterprise-ai-readiness-framework/issues
+Keywords: enterprise-ai,artificial-intelligence,generative-ai,llm,ai-governance,ai-safety,ai-readiness,ai-evaluation
 Classifier: Development Status :: 4 - Beta
 Classifier: Intended Audience :: Developers
 Classifier: Intended Audience :: Information Technology
+Classifier: License :: OSI Approved :: MIT License
 Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
 Classifier: Topic :: Software Development :: Quality Assurance
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
-Requires-Dist: typer>=0.10.0
-Requires-Dist: PyYAML>=6.0
 Provides-Extra: dev
-Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: build; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: pytest; extra == "dev"
 Requires-Dist: pytest-cov; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
-Requires-Dist: mypy; extra == "dev"
-Requires-Dist: build; extra == "dev"
 Requires-Dist: twine; extra == "dev"
 
 # Enterprise AI Readiness Framework (EARF)
