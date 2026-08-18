@@ -30,6 +30,38 @@ ALL_CODE_EXTENSIONS: tuple[str, ...] = (
 
 
 CODE_PATTERN_REGISTRY: tuple[CodePatternDefinition, ...] = (
+    # LLM provider usage patterns
+    CodePatternDefinition(
+        identifier="openai_client_import",
+        category="llm",
+        description="OpenAI SDK client import detected",
+        pattern=_compile(
+            r"\bfrom\s+openai\s+import\s+(OpenAI|AsyncOpenAI|AzureOpenAI|AsyncAzureOpenAI)\b"
+        ),
+        extensions=(".py",),
+    ),
+    CodePatternDefinition(
+        identifier="openai_client_construct",
+        category="llm",
+        description="OpenAI SDK client construction detected",
+        pattern=_compile(r"\b(OpenAI|AsyncOpenAI|AzureOpenAI|AsyncAzureOpenAI)\s*\("),
+        extensions=(".py",),
+    ),
+    CodePatternDefinition(
+        identifier="langchain_chat_provider_construct",
+        category="llm",
+        description="LangChain provider chat-model construction detected",
+        pattern=_compile(r"\b(ChatOpenAI|AzureChatOpenAI|ChatAnthropic|ChatBedrock|ChatVertexAI)\s*\("),
+        extensions=(".py",),
+    ),
+    CodePatternDefinition(
+        identifier="anthropic_client_construct",
+        category="llm",
+        description="Anthropic SDK client construction detected",
+        pattern=_compile(r"\b(Anthropic|AsyncAnthropic)\s*\("),
+        extensions=(".py",),
+    ),
+
     # Retry and resilience
     CodePatternDefinition(
         identifier="retry_annotation",

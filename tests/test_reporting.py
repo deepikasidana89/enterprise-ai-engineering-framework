@@ -290,13 +290,15 @@ def test_console_rendering() -> None:
     assert "EARF Version:" in output
     assert "Overall Assessment" in output
     assert "Core Readiness: 100.0 / 100" in output
-    assert "Assessment Coverage: 100.0%" in output
+    assert "Automated Evaluation Coverage: 100.0%" in output
+    assert "4 of 4 applicable controls were automatically resolved." in output
     assert "Production Status" in output
     assert "Why?" in output
     assert "1 critical blockers" in output
     assert "Critical Blockers" in output
     assert "Top Core Gaps" in output
     assert "Advanced Opportunities" in output
+    assert "Manual Review Required" in output
     assert "Passed Controls" in output
     assert "Summary" in output
     assert "Critical Findings" not in output
@@ -324,6 +326,12 @@ def test_json_serialization_and_enum_values(tmp_path: Path) -> None:
     assert parsed["core_readiness"]["score"] == 100.0
     assert parsed["advanced_controls"]["score"] == 0.0
     assert parsed["assessment_coverage"]["percentage"] == 100.0
+    assert parsed["automated_evaluation_coverage"] == {
+        "percentage": 100.0,
+        "evaluated": 4,
+        "applicable": 4,
+        "unresolved": 0,
+    }
     assert parsed["category_scores"] == {
         "evaluation": 0.0,
         "governance": 100.0,
@@ -351,6 +359,66 @@ def test_markdown_rendering_and_file_output(tmp_path: Path) -> None:
     assert "**Reason:** No supported evidence of externalized secret management was detected." in content
     assert "## Recommendations" in content
     assert "## Advanced Opportunities" in content
+    assert "## Manual Review Required" in content
+
+
+def test_manual_review_items_are_separate_from_fail_findings() -> None:
+    catalog = RuleCatalog(
+        [
+            _rule(
+                "SEC-001",
+                title="Secrets are not hard-coded",
+                category="security",
+                severity=Severity.CRITICAL,
+                failure_message="No supported evidence of externalized secret management was detected.",
+                recommendation="Use a secret manager.",
+            ),
+            _rule(
+                "GOV-001",
+                title="AI ownership documented",
+                category="governance",
+                severity=Severity.HIGH,
+                failure_message="AI ownership documentation evidence was not detected.",
+                recommendation="Add CODEOWNERS.",
+            ),
+        ]
+    )
+    results = [
+        _result("SEC-001", RuleStatus.MANUAL_REVIEW, "Manual verification required for secret handling."),
+        _result("GOV-001", RuleStatus.FAIL, "AI ownership documentation evidence was not detected."),
+    ]
+    analysis = AnalysisResult(
+        repository_context=RepositoryContext(root_path=Path("."), project_name="sample-repo"),
+        evidence_repository=EvidenceRepository(),
+        rule_catalog=catalog,
+        rule_results=results,
+        readiness_score=ReadinessScore(
+            overall_score=100.0,
+            core_readiness_score=100.0,
+            advanced_controls_score=0.0,
+            category_scores={"governance": 100.0, "security": 0.0},
+            total_rules=2,
+            passed_rules=0,
+            failed_rules=1,
+            manual_review_rules=1,
+            not_applicable_rules=0,
+            disabled_rules=0,
+            error_rules=0,
+            critical_failures=0,
+            high_failures=1,
+            summary={},
+            production_readiness=ProductionReadiness.READY,
+            category_details={},
+            assessment_coverage=AssessmentCoverage(percentage=50.0, evaluated=1, applicable=2),
+        ),
+    )
+
+    report = ReportBuilder().build(analysis, generated_at=TIMESTAMP)
+
+    assert [item["rule_id"] for item in report.metadata["critical_findings"]] == []
+    assert [item["rule_id"] for item in report.metadata["high_findings"]] == ["GOV-001"]
+    assert [item["rule_id"] for item in report.metadata["core_gaps"]] == ["GOV-001"]
+    assert [item["rule_id"] for item in report.metadata["manual_review_required"]] == ["SEC-001"]
 
 
 def test_build_readiness_report_compatibility_helper() -> None:

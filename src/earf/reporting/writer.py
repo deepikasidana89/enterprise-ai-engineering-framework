@@ -18,10 +18,8 @@ def _escape_markdown_table(value: object) -> str:
 
 class ReportWriter:
     def render_console(self, report: ReadinessReport) -> str:
-        categories = sorted(
-            report.readiness_score.category_scores.items(),
-            key=lambda item: item[0].lower(),
-        )
+        category_details = report.readiness_score.category_details
+        categories = sorted(category_details.items(), key=lambda item: item[0].lower())
         rule_details = cast(
             list[dict[str, object]],
             report.metadata.get("rule_details", []),
@@ -44,6 +42,10 @@ class ReportWriter:
             list[dict[str, object]],
             report.metadata.get("advanced_opportunities", []),
         )
+        manual_review_required = cast(
+            list[dict[str, object]],
+            report.metadata.get("manual_review_required", []),
+        )
         critical_blockers = [
             item for item in core_gaps if str(item.get("severity", "")).upper() == "CRITICAL"
         ]
@@ -53,16 +55,14 @@ class ReportWriter:
         high_priority_core_gap_count = sum(
             1 for item in top_core_gaps if str(item.get("severity", "")).upper() == "HIGH"
         )
-        core_applicable_controls = (
-            (core_detail.passed_rules + core_detail.failed_rules + core_detail.error_rules)
+        core_scored_controls = (
+            (core_detail.passed_rules + core_detail.failed_rules)
             if core_detail is not None
             else 0
         )
+        coverage_unresolved = max(coverage.applicable - coverage.evaluated, 0)
+        category_width = max((len(_title_case_category(name)) for name, _ in categories), default=0)
 
-        category_width = max(
-            (len(_title_case_category(category)) for category, _ in categories),
-            default=0,
-        )
         lines = [
             "EARF Enterprise AI Readiness Report",
             "",
@@ -74,7 +74,12 @@ class ReportWriter:
             "",
             f"Core Readiness: {report.readiness_score.core_readiness_score:.1f} / 100",
             f"Advanced Controls: {report.readiness_score.advanced_controls_score:.1f} / 100",
-            f"Assessment Coverage: {coverage.percentage:.1f}%",
+            f"Automated Evaluation Coverage: {coverage.percentage:.1f}%",
+            (
+                f"{coverage.evaluated} of {coverage.applicable} applicable controls "
+                "were automatically resolved."
+            ),
+            f"{coverage_unresolved} applicable controls were not automatically resolved.",
             "",
             "Production Status",
             "",
@@ -86,16 +91,36 @@ class ReportWriter:
             f"{high_priority_core_gap_count} high-priority core gaps",
             (
                 f"{core_detail.passed_rules if core_detail else 0} of "
-                f"{core_applicable_controls} applicable core controls passed"
+                f"{core_scored_controls} scored core controls passed"
+            ),
+            (
+                f"{core_detail.manual_review_rules if core_detail else 0} applicable core controls "
+                "require manual review"
             ),
             "",
             "Category Scores",
             "",
         ]
 
-        for category, score in categories:
+        for category, detail in categories:
+            scored_rules = detail.passed_rules + detail.failed_rules
+            if scored_rules > 0:
+                score_text = f"{detail.percentage:>5.1f}"
+                count_text = f"({detail.passed_rules} passed, {detail.failed_rules} failed)"
+            else:
+                score_text = "    -"
+                unresolved_parts: list[str] = []
+                if detail.manual_review_rules:
+                    unresolved_parts.append(f"{detail.manual_review_rules} manual review")
+                if detail.not_applicable_rules:
+                    unresolved_parts.append(f"{detail.not_applicable_rules} not applicable")
+                if detail.disabled_rules:
+                    unresolved_parts.append(f"{detail.disabled_rules} disabled")
+                if detail.error_rules:
+                    unresolved_parts.append(f"{detail.error_rules} errors")
+                count_text = f"({', '.join(unresolved_parts) if unresolved_parts else '0 scored'})"
             lines.append(
-                f"{_title_case_category(category):<{category_width}}  {score:>5.1f}"
+                f"{_title_case_category(category):<{category_width}}  {score_text}  {count_text}"
             )
 
         lines.extend(["", "Critical Blockers", ""])
@@ -116,6 +141,13 @@ class ReportWriter:
         if advanced_opportunities:
             for finding in advanced_opportunities:
                 self._append_console_finding(lines, finding, action_label="Opportunity")
+        else:
+            lines.append("None")
+
+        lines.extend(["", "Manual Review Required", ""])
+        if manual_review_required:
+            for finding in manual_review_required:
+                self._append_console_finding(lines, finding, action_label="Action")
         else:
             lines.append("None")
 
@@ -153,6 +185,7 @@ class ReportWriter:
                     f"Advanced: {advanced_detail.passed_rules if advanced_detail else 0} passed / "
                     f"{advanced_detail.failed_rules if advanced_detail else 0} opportunities"
                 ),
+                f"Manual Review: {report.readiness_score.manual_review_rules}",
                 f"N/A: {report.readiness_score.not_applicable_rules}",
             ]
         )
@@ -163,10 +196,8 @@ class ReportWriter:
         return json.dumps(self._json_payload(report), indent=2, ensure_ascii=False)
 
     def render_markdown(self, report: ReadinessReport) -> str:
-        categories = sorted(
-            report.readiness_score.category_scores.items(),
-            key=lambda item: item[0].lower(),
-        )
+        category_details = report.readiness_score.category_details
+        categories = sorted(category_details.items(), key=lambda item: item[0].lower())
         rule_details = cast(
             list[dict[str, object]],
             report.metadata.get("rule_details", []),
@@ -187,6 +218,10 @@ class ReportWriter:
         not_applicable_rows = [
             row for row in rule_details if str(row.get("status", "")) == "NOT_APPLICABLE"
         ]
+        manual_review_required = cast(
+            list[dict[str, object]],
+            report.metadata.get("manual_review_required", []),
+        )
         critical_blockers = [
             item for item in core_gaps if str(item.get("severity", "")).upper() == "CRITICAL"
         ]
@@ -197,8 +232,8 @@ class ReportWriter:
             1 for item in top_core_gaps if str(item.get("severity", "")).upper() == "HIGH"
         )
         core_detail = report.readiness_score.tier_details.get("core")
-        core_applicable_controls = (
-            (core_detail.passed_rules + core_detail.failed_rules + core_detail.error_rules)
+        core_scored_controls = (
+            (core_detail.passed_rules + core_detail.failed_rules)
             if core_detail is not None
             else 0
         )
@@ -218,7 +253,7 @@ class ReportWriter:
             f"| Core Readiness | {report.readiness_score.core_readiness_score:.1f} / 100 |",
             f"| Advanced Controls | {report.readiness_score.advanced_controls_score:.1f} / 100 |",
             (
-                "| Assessment Coverage | "
+                "| Automated Evaluation Coverage | "
                 f"{report.readiness_score.assessment_coverage.percentage:.1f}% "
                 f"({report.readiness_score.assessment_coverage.evaluated}/"
                 f"{report.readiness_score.assessment_coverage.applicable}) |"
@@ -235,7 +270,11 @@ class ReportWriter:
             f"- {high_priority_core_gap_count} high-priority core gaps",
             (
                 f"- {core_detail.passed_rules if core_detail else 0} of "
-                f"{core_applicable_controls} applicable core controls passed"
+                f"{core_scored_controls} scored core controls passed"
+            ),
+            (
+                f"- {core_detail.manual_review_rules if core_detail else 0} applicable core controls "
+                "require manual review"
             ),
             "",
             "## Core Controls",
@@ -264,13 +303,23 @@ class ReportWriter:
             "",
             "## Category Scores",
             "",
-            "| Category | Score |",
-            "| --- | ---: |",
+            "| Category | Score | Passed | Failed | Manual Review | N/A | Disabled | Errors |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
 
-        for category, score in categories:
+        for category, detail in categories:
+            scored_rules = detail.passed_rules + detail.failed_rules
+            score_text = f"{detail.percentage:.1f}" if scored_rules > 0 else "-"
             lines.append(
-                f"| {_escape_markdown_table(_title_case_category(category))} | {score:.1f} |"
+                "| "
+                f"{_escape_markdown_table(_title_case_category(category))} | "
+                f"{score_text} | "
+                f"{detail.passed_rules} | "
+                f"{detail.failed_rules} | "
+                f"{detail.manual_review_rules} | "
+                f"{detail.not_applicable_rules} | "
+                f"{detail.disabled_rules} | "
+                f"{detail.error_rules} |"
             )
 
         lines.extend(
@@ -341,6 +390,13 @@ class ReportWriter:
         else:
             lines.append("- None")
 
+        lines.extend(["", "## Manual Review Required", ""])
+        if manual_review_required:
+            for finding in manual_review_required:
+                self._append_markdown_finding(lines, finding)
+        else:
+            lines.append("- None")
+
         lines.extend(["", "## Passed Controls", ""])
         if passed_controls:
             for item in passed_controls:
@@ -396,6 +452,33 @@ class ReportWriter:
         )
         core_detail = report.readiness_score.tier_details.get("core")
         advanced_detail = report.readiness_score.tier_details.get("advanced")
+        category_details = report.readiness_score.category_details
+        category_score_details = {
+            category: {
+                "score": (
+                    detail.percentage
+                    if (detail.passed_rules + detail.failed_rules) > 0
+                    else None
+                ),
+                "passed": detail.passed_rules,
+                "failed": detail.failed_rules,
+                "manual_review": detail.manual_review_rules,
+                "not_applicable": detail.not_applicable_rules,
+                "disabled": detail.disabled_rules,
+                "errors": detail.error_rules,
+            }
+            for category, detail in sorted(category_details.items(), key=lambda item: item[0].lower())
+        }
+        automated_coverage = {
+            "percentage": report.readiness_score.assessment_coverage.percentage,
+            "evaluated": report.readiness_score.assessment_coverage.evaluated,
+            "applicable": report.readiness_score.assessment_coverage.applicable,
+            "unresolved": max(
+                report.readiness_score.assessment_coverage.applicable
+                - report.readiness_score.assessment_coverage.evaluated,
+                0,
+            ),
+        }
 
         return {
             "repository_name": report.repository_name,
@@ -425,8 +508,10 @@ class ReportWriter:
                 "evaluated": report.readiness_score.assessment_coverage.evaluated,
                 "applicable": report.readiness_score.assessment_coverage.applicable,
             },
+            "automated_evaluation_coverage": automated_coverage,
             "production_status": report.readiness_score.production_readiness.value,
             "category_scores": {category: score for category, score in categories},
+            "category_score_details": category_score_details,
             "summary": {
                 "passed": report.readiness_score.passed_rules,
                 "failed": report.readiness_score.failed_rules,

@@ -126,6 +126,159 @@ def test_uses_llm_detected_from_dependency(tmp_path: Path) -> None:
     assert any(item.identifier == "openai" for item in detection.evidence)
 
 
+def test_uses_llm_detected_from_version_pinned_openai(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text("openai==1.40.0\n", encoding="utf-8")
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is True
+    assert any(item.identifier == "openai" for item in detection.evidence)
+
+
+def test_uses_llm_detected_from_mixed_case_openai_dependency(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text("OpenAI>=1.0\n", encoding="utf-8")
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is True
+    assert any(item.identifier == "openai" for item in detection.evidence)
+
+
+def test_uses_llm_detected_from_langchain_openai_hyphen_dependency(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text("langchain-openai==0.3.0\n", encoding="utf-8")
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is True
+    assert any(item.identifier == "langchain-openai" for item in detection.evidence)
+
+
+def test_uses_llm_detected_from_langchain_openai_underscore_dependency(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text("langchain_openai\n", encoding="utf-8")
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is True
+    assert any(item.identifier == "langchain-openai" for item in detection.evidence)
+
+
+def test_uses_llm_detected_from_openai_import_pattern(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("from openai import OpenAI\n", encoding="utf-8")
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is True
+    assert any(item.identifier == "openai_client_import" for item in detection.evidence)
+
+
+def test_uses_llm_detected_from_async_openai_constructor_pattern(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("client = AsyncOpenAI()\n", encoding="utf-8")
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is True
+    assert any(item.identifier == "openai_client_construct" for item in detection.evidence)
+
+
+def test_uses_llm_detected_from_azure_chat_openai_pattern(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("llm = AzureChatOpenAI()\n", encoding="utf-8")
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is True
+    assert any(item.identifier == "langchain_chat_provider_construct" for item in detection.evidence)
+
+
+def test_generic_model_service_does_not_trigger_uses_llm(tmp_path: Path) -> None:
+    (tmp_path / "service.py").write_text(
+        "class ModelService:\n"
+        "    def get_model(self, model_config_id):\n"
+        "        return model_config_id\n",
+        encoding="utf-8",
+    )
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is False
+
+
+def test_generic_pricing_model_predict_does_not_trigger_uses_llm(tmp_path: Path) -> None:
+    (tmp_path / "pricing.py").write_text(
+        "class PricingModel:\n"
+        "    def predict(self, features):\n"
+        "        return 0\n",
+        encoding="utf-8",
+    )
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is False
+
+
+def test_substring_package_name_does_not_trigger_uses_llm(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text("my-openai-helper\n", encoding="utf-8")
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is False
+
+
+def test_openai_prefixed_internal_package_does_not_trigger_uses_llm(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text("openai-tools-internal\n", encoding="utf-8")
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is False
+
+
+def test_uses_llm_detected_from_real_requirements_file_path(tmp_path: Path) -> None:
+    fixture = tmp_path / "fixture_openai"
+    fixture.mkdir()
+    (fixture / "requirements.txt").write_text("openai==1.40.0\n", encoding="utf-8")
+    repo = _collect(fixture)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is True
+    assert any(item.identifier == "openai" and item.path == "requirements.txt" for item in detection.evidence)
+
+
+def test_uses_llm_detected_from_real_pyproject_dependency_path(tmp_path: Path) -> None:
+    fixture = tmp_path / "fixture_langchain_openai"
+    fixture.mkdir()
+    (fixture / "pyproject.toml").write_text(
+        "\n".join(
+            [
+                "[project]",
+                "name = \"fixture-langchain-openai\"",
+                "version = \"0.1.0\"",
+                "dependencies = [\"langchain-openai==0.3.0\"]",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    repo = _collect(fixture)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is True
+    assert any(
+        item.identifier == "langchain-openai" and item.path == "pyproject.toml"
+        for item in detection.evidence
+    )
+
+
 def test_readme_keyword_does_not_trigger_rag(tmp_path: Path) -> None:
     (tmp_path / "README.md").write_text("We may use RAG someday.", encoding="utf-8")
     repo = _collect(tmp_path)

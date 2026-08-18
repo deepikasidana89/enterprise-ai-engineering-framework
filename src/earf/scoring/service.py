@@ -118,24 +118,9 @@ class ScoringService:
                     tier_state.high_failures += 1
             elif status == RuleStatus.MANUAL_REVIEW:
                 manual_review_rules += 1
-                failed_rules += 1
                 coverage_applicable += 1
-                coverage_evaluated += 1
                 category_state.manual_review_rules += 1
-                category_state.failed_rules += 1
                 tier_state.manual_review_rules += 1
-                tier_state.failed_rules += 1
-                possible_weight += weight
-                category_state.possible_weight += weight
-                tier_state.possible_weight += weight
-                if rule.severity == Severity.CRITICAL:
-                    critical_failures += 1
-                    category_state.critical_failures += 1
-                    tier_state.critical_failures += 1
-                if rule.severity == Severity.HIGH:
-                    high_failures += 1
-                    category_state.high_failures += 1
-                    tier_state.high_failures += 1
             elif status == RuleStatus.ERROR:
                 error_rules += 1
                 coverage_applicable += 1

@@ -41,6 +41,129 @@ dev = ["pytest>=8", "ruff"]
     assert "ruff" in ids
 
 
+def test_dependency_collector_normalizes_python_package_variants(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text(
+        "\n".join(
+            [
+                "OpenAI==1.40.0",
+                '"openai>=1.0,<2.0"',
+                "langchain_openai>=0.3",
+                "langchain[openai]~=0.3",
+                "my-openai-helper",
+                "openai-tools-internal",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    collector = DependencyCollector()
+    items = collector.collect(_context(tmp_path))
+    ids = {item.identifier for item in items}
+
+    assert "openai" in ids
+    assert "langchain-openai" in ids
+    assert "langchain" in ids
+    assert "my-openai-helper" in ids
+    assert "openai-tools-internal" in ids
+
+
+def test_dependency_collector_collects_tool_poetry_dependencies(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text(
+        "\n".join(
+            [
+                "[tool.poetry]",
+                "name = \"x\"",
+                "version = \"0.1.0\"",
+                "[tool.poetry.dependencies]",
+                "python = \">=3.11\"",
+                "OpenAI = \"^1.40.0\"",
+                "langchain_openai = \"^0.3.0\"",
+                "[tool.poetry.group.dev.dependencies]",
+                "pytest = \"^8.0.0\"",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    collector = DependencyCollector()
+    ids = {item.identifier for item in collector.collect(_context(tmp_path))}
+
+    assert "openai" in ids
+    assert "langchain-openai" in ids
+    assert "pytest" in ids
+
+
+def test_dependency_collector_collects_from_setup_cfg(tmp_path: Path) -> None:
+    (tmp_path / "setup.cfg").write_text(
+        "\n".join(
+            [
+                "[metadata]",
+                "name = sample",
+                "[options]",
+                "install_requires =",
+                "    OpenAI>=1.0",
+                "    langchain_openai~=0.3",
+                "[options.extras_require]",
+                "dev =",
+                "    pytest>=8",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    collector = DependencyCollector()
+    ids = {item.identifier for item in collector.collect(_context(tmp_path))}
+
+    assert "openai" in ids
+    assert "langchain-openai" in ids
+    assert "pytest" in ids
+
+
+def test_dependency_collector_collects_from_setup_py(tmp_path: Path) -> None:
+    (tmp_path / "setup.py").write_text(
+        "\n".join(
+            [
+                "from setuptools import setup",
+                "setup(",
+                "    name='sample',",
+                "    install_requires=['OpenAI>=1.0', 'langchain_openai>=0.3'],",
+                "    extras_require={'dev': ['pytest>=8']},",
+                ")",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    collector = DependencyCollector()
+    ids = {item.identifier for item in collector.collect(_context(tmp_path))}
+
+    assert "openai" in ids
+    assert "langchain-openai" in ids
+    assert "pytest" in ids
+
+
+def test_dependency_collector_collects_from_pipfile(tmp_path: Path) -> None:
+    (tmp_path / "Pipfile").write_text(
+        "\n".join(
+            [
+                "[packages]",
+                "OpenAI = \"*\"",
+                "langchain_openai = \"*\"",
+                "[dev-packages]",
+                "pytest = \"*\"",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    collector = DependencyCollector()
+    ids = {item.identifier for item in collector.collect(_context(tmp_path))}
+
+    assert "openai" in ids
+    assert "langchain-openai" in ids
+    assert "pytest" in ids
+
+
 def test_dependency_collector_handles_missing_files(tmp_path: Path) -> None:
     collector = DependencyCollector()
     assert collector.collect(_context(tmp_path)) == []

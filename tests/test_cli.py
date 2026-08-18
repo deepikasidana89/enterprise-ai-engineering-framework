@@ -459,7 +459,7 @@ def test_report_command_console_output(tmp_path: Path, monkeypatch) -> None:
     assert "EARF Enterprise AI Readiness Report" in result.stdout
     assert "Overall Assessment" in result.stdout
     assert "Core Readiness:" in result.stdout
-    assert "Assessment Coverage:" in result.stdout
+    assert "Automated Evaluation Coverage:" in result.stdout
     assert "Production Status" in result.stdout
     assert "Why?" in result.stdout
     assert "Critical Blockers" in result.stdout

@@ -110,7 +110,7 @@ Overall Assessment
 
 Core Readiness: 82.0 / 100
 Advanced Controls: 61.0 / 100
-Assessment Coverage: 78.0%
+Automated Evaluation Coverage: 78.0%
 
 Production Status
 
@@ -195,15 +195,15 @@ Note: EARF findings indicate the presence or absence of implementation evidence.
 
 EARF detects engineering evidence. A `PASS` indicates supported evidence was detected; it does not prove that a control is correctly or completely implemented.
 
-### Assessment Coverage
+### Automated Evaluation Coverage
 
-Assessment Coverage represents the percentage of applicable EARF controls that completed automated evaluation.
+Automated Evaluation Coverage represents the percentage of applicable EARF controls that were automatically resolved by deterministic checks.
 
-- Evaluated: controls with status `PASS`, `FAIL`, or `MANUAL_REVIEW`.
+- Evaluated: controls with status `PASS` or `FAIL`.
 - Applicable: controls with status `PASS`, `FAIL`, `MANUAL_REVIEW`, or `ERROR`.
 - Excluded from coverage: `NOT_APPLICABLE` and `DISABLED`.
 
-Assessment Coverage does not represent the percentage of an application's implementation inspected or verified.
+`100%` means all applicable controls were automatically resolved. It does not mean 100% of system behavior or implementation quality was verified.
 
 ### Current Limitations
 

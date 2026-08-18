@@ -35,6 +35,7 @@ class ReportBuilder:
         seen_recommendations: set[str] = set()
         core_gaps: list[dict[str, object]] = []
         advanced_opportunities: list[dict[str, object]] = []
+        manual_review_required: list[dict[str, object]] = []
         passed_controls: list[dict[str, object]] = []
 
         for result in ordered_results:
@@ -73,7 +74,24 @@ class ReportBuilder:
                     }
                 )
 
-            if result.status not in {RuleStatus.FAIL, RuleStatus.MANUAL_REVIEW} or rule is None:
+            if rule is None:
+                continue
+
+            if result.status == RuleStatus.MANUAL_REVIEW:
+                manual_review_required.append(
+                    {
+                        "rule_id": rule.id,
+                        "title": rule.title,
+                        "severity": rule.severity.name,
+                        "status": result.status.name,
+                        "failure_message": result.message,
+                        "recommendation": rule.recommendation,
+                        "missing_requirements": list(result.missing_requirements),
+                    }
+                )
+                continue
+
+            if result.status != RuleStatus.FAIL:
                 continue
 
             finding = {
@@ -118,9 +136,10 @@ class ReportBuilder:
                 "critical_findings": critical_findings,
                 "high_findings": high_findings,
                 "recommendations": recommendations,
-                    "core_gaps": core_gaps,
-                    "advanced_opportunities": advanced_opportunities,
-                    "passed_controls": passed_controls,
+                "core_gaps": core_gaps,
+                "advanced_opportunities": advanced_opportunities,
+                "manual_review_required": manual_review_required,
+                "passed_controls": passed_controls,
             },
             analysis_result=analysis_result,
         )

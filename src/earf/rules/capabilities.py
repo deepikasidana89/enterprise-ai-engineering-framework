@@ -2,8 +2,32 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ..dependency_normalization import normalize_dependency_identifier
 from ..evidence import EvidenceRepository
 from ..models import Evidence, EvidenceType
+
+
+LLM_DEPENDENCIES = {
+    "openai",
+    "langchain-openai",
+    "anthropic",
+    "langchain-anthropic",
+    "litellm",
+    "google-generativeai",
+    "azure-ai-inference",
+    "transformers",
+    "llama-index",
+    "langchain",
+    "langgraph",
+    "semantic-kernel",
+}
+
+LLM_PROVIDER_CODE_PATTERNS = {
+    "openai_client_import",
+    "openai_client_construct",
+    "langchain_chat_provider_construct",
+    "anthropic_client_construct",
+}
 
 
 @dataclass(frozen=True)
@@ -25,18 +49,8 @@ class RepositoryCapabilityDetector:
         "has_cicd",
     }
 
-    _LLM_DEPENDENCIES = {
-        "openai",
-        "anthropic",
-        "langchain",
-        "langgraph",
-        "transformers",
-        "llama-index",
-        "litellm",
-        "semantic-kernel",
-        "google-generativeai",
-        "azure-ai-inference",
-    }
+    _LLM_DEPENDENCIES = LLM_DEPENDENCIES
+    _LLM_PROVIDER_CODE_PATTERNS = LLM_PROVIDER_CODE_PATTERNS
 
     _RAG_FRAMEWORK_DEPENDENCIES = {
         "langchain",
@@ -119,7 +133,24 @@ class RepositoryCapabilityDetector:
 
     def _detect_uncached(self, capability: str) -> CapabilityDetection:
         if capability == "uses_llm":
-            return self._detect_dependency_capability(capability, self._LLM_DEPENDENCIES)
+            dependency_hits = self._dependency_matches(self._LLM_DEPENDENCIES)
+            provider_pattern_hits = self._code_pattern_matches(self._LLM_PROVIDER_CODE_PATTERNS)
+            evidence = self._dedupe(dependency_hits + provider_pattern_hits)
+            if evidence:
+                return CapabilityDetection(
+                    name=capability,
+                    detected=True,
+                    reason="LLM capability detected from dependency and/or provider implementation evidence.",
+                    evidence=evidence,
+                )
+            return CapabilityDetection(
+                name=capability,
+                detected=False,
+                reason=(
+                    "No supported LLM dependency or provider implementation evidence detected."
+                ),
+                evidence=[],
+            )
 
         if capability == "uses_agents":
             return self._detect_dependency_or_code_pattern_capability(
@@ -249,8 +280,17 @@ class RepositoryCapabilityDetector:
 
     def _dependency_matches(self, expected_identifiers: set[str]) -> list[Evidence]:
         dependencies = self._repository.find(evidence_type=EvidenceType.DEPENDENCY)
-        expected = {item.lower() for item in expected_identifiers}
-        return [item for item in dependencies if item.identifier.lower() in expected]
+        expected = {
+            normalize_dependency_identifier(item)
+            for item in expected_identifiers
+            if normalize_dependency_identifier(item)
+        }
+        matches: list[Evidence] = []
+        for item in dependencies:
+            normalized = normalize_dependency_identifier(item.identifier)
+            if normalized in expected:
+                matches.append(item)
+        return matches
 
     def _code_pattern_matches(self, expected_identifiers: set[str]) -> list[Evidence]:
         patterns = self._repository.find(evidence_type=EvidenceType.CODE_PATTERN)

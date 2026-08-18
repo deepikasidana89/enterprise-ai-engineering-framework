@@ -253,7 +253,7 @@ def test_custom_severity_weights_are_used() -> None:
     assert score.overall_score == 66.7
 
 
-def test_manual_review_counts_and_scores_as_conservative_failure() -> None:
+def test_manual_review_counts_without_penalizing_score_or_failures() -> None:
     catalog = RuleCatalog(
         [
             _rule("SEC-001", category="security", severity=Severity.CRITICAL),
@@ -268,9 +268,30 @@ def test_manual_review_counts_and_scores_as_conservative_failure() -> None:
     score = ScoringService().score(results, catalog)
 
     assert score.manual_review_rules == 1
-    assert score.failed_rules == 1
-    assert score.critical_failures == 1
-    assert score.overall_score == 41.2
+    assert score.failed_rules == 0
+    assert score.critical_failures == 0
+    assert score.overall_score == 100.0
+    assert score.assessment_coverage.evaluated == 1
+    assert score.assessment_coverage.applicable == 2
+    assert score.assessment_coverage.percentage == 50.0
+
+
+def test_manual_review_does_not_trigger_not_ready_gate() -> None:
+    catalog = RuleCatalog(
+        [
+            _rule("SEC-001", category="security", severity=Severity.CRITICAL, tier=ControlTier.CORE),
+            _rule("GOV-001", category="governance", severity=Severity.HIGH, tier=ControlTier.CORE),
+        ]
+    )
+    results = [
+        _result("SEC-001", RuleStatus.MANUAL_REVIEW),
+        _result("GOV-001", RuleStatus.PASS),
+    ]
+
+    score = ScoringService().score(results, catalog)
+
+    assert score.core_readiness_score == 100.0
+    assert score.production_readiness == ProductionReadiness.READY
 
 
 def test_advanced_failures_do_not_force_not_ready_when_core_is_ready() -> None:
@@ -380,3 +401,48 @@ def test_assessment_coverage_formula_across_statuses() -> None:
     assert score.assessment_coverage.evaluated == 2
     assert score.assessment_coverage.applicable == 3
     assert score.assessment_coverage.percentage == 66.7
+
+
+def test_assessment_coverage_excludes_manual_review_from_evaluated() -> None:
+    catalog = RuleCatalog(
+        [
+            _rule("GOV-001", category="governance", severity=Severity.HIGH),
+            _rule("GOV-002", category="governance", severity=Severity.HIGH),
+            _rule("GOV-003", category="governance", severity=Severity.HIGH),
+            _rule("GOV-004", category="governance", severity=Severity.HIGH),
+            _rule("GOV-005", category="governance", severity=Severity.HIGH),
+        ]
+    )
+    results = [
+        _result("GOV-001", RuleStatus.PASS),
+        _result("GOV-002", RuleStatus.PASS),
+        _result("GOV-003", RuleStatus.FAIL),
+        _result("GOV-004", RuleStatus.FAIL),
+        _result("GOV-005", RuleStatus.MANUAL_REVIEW),
+    ]
+
+    score = ScoringService().score(results, catalog)
+
+    assert score.assessment_coverage.evaluated == 4
+    assert score.assessment_coverage.applicable == 5
+    assert score.assessment_coverage.percentage == 80.0
+
+
+def test_category_with_only_manual_review_has_no_scored_weight() -> None:
+    catalog = RuleCatalog(
+        [
+            _rule("SEC-001", category="security", severity=Severity.HIGH),
+            _rule("SEC-002", category="security", severity=Severity.MEDIUM),
+        ]
+    )
+    results = [
+        _result("SEC-001", RuleStatus.MANUAL_REVIEW),
+        _result("SEC-002", RuleStatus.MANUAL_REVIEW),
+    ]
+
+    score = ScoringService().score(results, catalog)
+
+    assert score.category_details["security"].possible_weight == 0
+    assert score.category_details["security"].passed_rules == 0
+    assert score.category_details["security"].failed_rules == 0
+    assert score.category_details["security"].manual_review_rules == 2
