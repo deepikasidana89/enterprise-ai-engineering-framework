@@ -7,14 +7,19 @@ from pathlib import Path
 import pytest
 
 from earf.evidence import EvidenceRepository
-from earf.models import RepositoryContext, RuleDefinition, Severity
+from earf.models import ControlTier, RepositoryContext, RuleDefinition, Severity
 from earf.pipeline import AnalysisResult
 from earf.reporting.builder import ReportBuilder, build_readiness_report, format_timestamp
 from earf.reporting.models import ReadinessReport
 from earf.reporting.writer import ReportWriter
 from earf.rules.catalog import RuleCatalog
 from earf.rules.results import RuleResult, RuleStatus
-from earf.scoring.models import ProductionReadiness, ReadinessScore
+from earf.scoring.models import (
+    AssessmentCoverage,
+    ProductionReadiness,
+    ReadinessScore,
+    TierScoreDetail,
+)
 
 
 TIMESTAMP = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
@@ -26,6 +31,7 @@ def _rule(
     title: str,
     category: str,
     severity: Severity,
+    tier: ControlTier = ControlTier.CORE,
     failure_message: str,
     recommendation: str,
 ) -> RuleDefinition:
@@ -35,6 +41,7 @@ def _rule(
         description="desc",
         category=category,
         severity=severity,
+        tier=tier,
         applicability={"always": True},
         evidence_requirements={"evidence_type": "file", "identifiers": ["README.md"]},
         failure_message=failure_message,
@@ -49,6 +56,8 @@ def _result(rule_id: str, status: RuleStatus, message: str = "message") -> RuleR
 def _score() -> ReadinessScore:
     return ReadinessScore(
         overall_score=84.6,
+        core_readiness_score=100.0,
+        advanced_controls_score=0.0,
         category_scores={
             "security": 66.7,
             "governance": 100.0,
@@ -64,8 +73,41 @@ def _score() -> ReadinessScore:
         critical_failures=1,
         high_failures=2,
         summary={"earned_weight": 22, "possible_weight": 26},
-        production_readiness=ProductionReadiness.NOT_READY,
+        production_readiness=ProductionReadiness.READY,
         category_details={},
+        tier_details={
+            "core": TierScoreDetail(
+                tier=ControlTier.CORE,
+                score=100.0,
+                earned_weight=17,
+                possible_weight=17,
+                total_rules=3,
+                passed_rules=2,
+                failed_rules=0,
+                manual_review_rules=0,
+                not_applicable_rules=0,
+                disabled_rules=0,
+                error_rules=0,
+                critical_failures=0,
+                high_failures=0,
+            ),
+            "advanced": TierScoreDetail(
+                tier=ControlTier.ADVANCED,
+                score=0.0,
+                earned_weight=0,
+                possible_weight=14,
+                total_rules=1,
+                passed_rules=0,
+                failed_rules=1,
+                manual_review_rules=0,
+                not_applicable_rules=0,
+                disabled_rules=0,
+                error_rules=0,
+                critical_failures=1,
+                high_failures=1,
+            ),
+        },
+        assessment_coverage=AssessmentCoverage(percentage=100.0, evaluated=4, applicable=4),
     )
 
 
@@ -101,6 +143,7 @@ def _analysis_result() -> AnalysisResult:
                 title="Telemetry present",
                 category="evaluation",
                 severity=Severity.HIGH,
+                tier=ControlTier.ADVANCED,
                 failure_message="AI observability or tracing evidence was not detected.",
                 recommendation="Add CODEOWNERS or OWNERS.",
             ),
@@ -245,8 +288,9 @@ def test_console_rendering() -> None:
     assert "Repository: sample-repo" in output
     assert "Generated: 2026-01-02T03:04:05Z" in output
     assert "EARF Version:" in output
-    assert "Overall Readiness" in output
-    assert "84.6 / 100" in output
+    assert "Overall Assessment" in output
+    assert "Core Readiness: 100.0 / 100" in output
+    assert "Assessment Coverage: 100.0% (4/4)" in output
     assert "Critical Findings" in output
     assert "[CRITICAL] SEC-001 - Secrets are not hard-coded" in output
     assert "Reason:" in output
@@ -255,6 +299,8 @@ def test_console_rendering() -> None:
     assert "High Findings" in output
     assert "[HIGH] OBS-001 - Telemetry present" in output
     assert "Recommendations" in output
+    assert "Top Core Gaps" in output
+    assert "Advanced Opportunities" in output
 
 
 def test_json_serialization_and_enum_values(tmp_path: Path) -> None:
@@ -267,7 +313,10 @@ def test_json_serialization_and_enum_values(tmp_path: Path) -> None:
     assert parsed["generated_at"] == "2026-01-02T03:04:05Z"
     assert parsed["earf_version"] == report.earf_version
     assert parsed["overall_score"] == 84.6
-    assert parsed["production_status"] == "NOT_READY"
+    assert parsed["production_status"] == "READY"
+    assert parsed["core_readiness"]["score"] == 100.0
+    assert parsed["advanced_controls"]["score"] == 0.0
+    assert parsed["assessment_coverage"]["percentage"] == 100.0
     assert parsed["category_scores"] == {
         "evaluation": 0.0,
         "governance": 100.0,
@@ -286,11 +335,15 @@ def test_markdown_rendering_and_file_output(tmp_path: Path) -> None:
     content = output_path.read_text(encoding="utf-8")
     assert output_path.name == "EARF_REPORT.md"
     assert "# EARF Enterprise AI Readiness Report" in content
+    assert "## Overall Assessment" in content
+    assert "## Core Controls" in content
+    assert "## Advanced Controls" in content
     assert "## Category Scores" in content
     assert "## Full Rule Results" in content
-    assert "| Rule ID | Title | Category | Severity | Status | Recommendation |" in content
+    assert "| Rule ID | Title | Category | Tier | Severity | Status | Recommendation |" in content
     assert "**Reason:** No supported evidence of externalized secret management was detected." in content
     assert "## Recommendations" in content
+    assert "## Advanced Opportunities" in content
 
 
 def test_build_readiness_report_compatibility_helper() -> None:

@@ -4,22 +4,13 @@ rules:
     description: AI input is validated or sanitized before model invocation.
     category: safety
     severity: high
+    tier: core
     version: "1.0"
     enabled: true
     applicability:
-      any:
-        - evidence_type: dependency
-          identifiers:
-            - openai
-            - anthropic
-            - langchain
-            - langgraph
-            - transformers
-            - llama-index
-            - litellm
-            - semantic-kernel
-            - google-generativeai
-            - azure-ai-inference
+      all:
+        - capability: uses_llm
+        - capability: has_api
     rationale: Input validation prevents unsafe or malformed requests.
     failure_message: Input validation evidence was not detected.
     recommendation: Add validation and sanitization checks for AI inputs.
@@ -40,6 +31,7 @@ rules:
     description: AI output is filtered or constrained with safety guardrails.
     category: safety
     severity: high
+    tier: core
     version: "1.0"
     enabled: true
     applicability:

@@ -4,6 +4,7 @@ rules:
     description: AI request and response activity is captured for monitoring.
     category: observability
     severity: medium
+    tier: core
     version: "1.0"
     enabled: true
     applicability:

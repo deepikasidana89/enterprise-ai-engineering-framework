@@ -2,11 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..models import Severity
+from ..models import ControlTier, Severity
 from ..rules.catalog import RuleCatalog
 from ..rules.results import RuleResult, RuleStatus
 from .config import DEFAULT_SEVERITY_WEIGHTS, ReadinessThresholds
-from .models import CategoryScoreDetail, ProductionReadiness, ReadinessScore
+from .models import (
+    AssessmentCoverage,
+    CategoryScoreDetail,
+    ProductionReadiness,
+    ReadinessScore,
+    TierScoreDetail,
+)
 
 
 @dataclass
@@ -58,6 +64,12 @@ class ScoringService:
         possible_weight = 0
 
         category_accumulators: dict[str, _CategoryAccumulator] = {}
+        tier_accumulators: dict[ControlTier, _CategoryAccumulator] = {
+            ControlTier.CORE: _CategoryAccumulator(),
+            ControlTier.ADVANCED: _CategoryAccumulator(),
+        }
+        coverage_applicable = 0
+        coverage_evaluated = 0
 
         for rule in rules:
             total_rules += 1
@@ -71,60 +83,97 @@ class ScoringService:
             weight = self._weights.get(rule.severity, 0)
             category = rule.category
             category_state = category_accumulators.setdefault(category, _CategoryAccumulator())
+            tier_state = tier_accumulators.setdefault(rule.tier, _CategoryAccumulator())
             category_state.total_rules += 1
+            tier_state.total_rules += 1
 
             if status == RuleStatus.PASS:
                 passed_rules += 1
+                coverage_applicable += 1
+                coverage_evaluated += 1
                 category_state.passed_rules += 1
+                tier_state.passed_rules += 1
                 earned_weight += weight
                 possible_weight += weight
                 category_state.earned_weight += weight
                 category_state.possible_weight += weight
+                tier_state.earned_weight += weight
+                tier_state.possible_weight += weight
             elif status == RuleStatus.FAIL:
                 failed_rules += 1
+                coverage_applicable += 1
+                coverage_evaluated += 1
                 category_state.failed_rules += 1
+                tier_state.failed_rules += 1
                 possible_weight += weight
                 category_state.possible_weight += weight
+                tier_state.possible_weight += weight
                 if rule.severity == Severity.CRITICAL:
                     critical_failures += 1
                     category_state.critical_failures += 1
+                    tier_state.critical_failures += 1
                 if rule.severity == Severity.HIGH:
                     high_failures += 1
                     category_state.high_failures += 1
+                    tier_state.high_failures += 1
             elif status == RuleStatus.MANUAL_REVIEW:
                 manual_review_rules += 1
                 failed_rules += 1
+                coverage_applicable += 1
+                coverage_evaluated += 1
                 category_state.manual_review_rules += 1
                 category_state.failed_rules += 1
+                tier_state.manual_review_rules += 1
+                tier_state.failed_rules += 1
                 possible_weight += weight
                 category_state.possible_weight += weight
+                tier_state.possible_weight += weight
                 if rule.severity == Severity.CRITICAL:
                     critical_failures += 1
                     category_state.critical_failures += 1
+                    tier_state.critical_failures += 1
                 if rule.severity == Severity.HIGH:
                     high_failures += 1
                     category_state.high_failures += 1
+                    tier_state.high_failures += 1
             elif status == RuleStatus.ERROR:
                 error_rules += 1
+                coverage_applicable += 1
                 category_state.error_rules += 1
+                tier_state.error_rules += 1
                 possible_weight += weight
                 category_state.possible_weight += weight
+                tier_state.possible_weight += weight
             elif status == RuleStatus.NOT_APPLICABLE:
                 not_applicable_rules += 1
                 category_state.not_applicable_rules += 1
+                tier_state.not_applicable_rules += 1
             elif status == RuleStatus.DISABLED:
                 disabled_rules += 1
                 category_state.disabled_rules += 1
+                tier_state.disabled_rules += 1
 
         overall_score = self._percentage(earned_weight, possible_weight)
         category_details = self._build_category_details(category_accumulators)
+        tier_details = self._build_tier_details(tier_accumulators)
         category_scores = {
             category: detail.percentage for category, detail in category_details.items()
         }
 
+        core_detail = tier_details[ControlTier.CORE.value]
+        advanced_detail = tier_details[ControlTier.ADVANCED.value]
+        core_readiness_score = core_detail.score
+        advanced_controls_score = advanced_detail.score
+
         production = self._production_readiness(
-            overall_score=overall_score,
-            critical_failures=critical_failures,
+            overall_score=core_readiness_score,
+            critical_failures=core_detail.critical_failures,
+        )
+
+        assessment_coverage = AssessmentCoverage(
+            percentage=self._percentage(coverage_evaluated, coverage_applicable),
+            evaluated=coverage_evaluated,
+            applicable=coverage_applicable,
         )
 
         unknown_result_count = sum(
@@ -141,10 +190,19 @@ class ScoringService:
             "high_failures": high_failures,
             "manual_review_rules": manual_review_rules,
             "unknown_result_count": unknown_result_count,
+            "core_readiness_score": core_readiness_score,
+            "advanced_controls_score": advanced_controls_score,
+            "assessment_coverage": {
+                "percentage": assessment_coverage.percentage,
+                "evaluated": assessment_coverage.evaluated,
+                "applicable": assessment_coverage.applicable,
+            },
         }
 
         return ReadinessScore(
             overall_score=overall_score,
+            core_readiness_score=core_readiness_score,
+            advanced_controls_score=advanced_controls_score,
             category_scores=category_scores,
             total_rules=total_rules,
             passed_rules=passed_rules,
@@ -158,6 +216,8 @@ class ScoringService:
             summary=summary,
             production_readiness=production,
             category_details=category_details,
+            tier_details=tier_details,
+            assessment_coverage=assessment_coverage,
         )
 
     def _build_category_details(
@@ -171,6 +231,30 @@ class ScoringService:
                 earned_weight=state.earned_weight,
                 possible_weight=state.possible_weight,
                 percentage=self._percentage(state.earned_weight, state.possible_weight),
+                total_rules=state.total_rules,
+                passed_rules=state.passed_rules,
+                failed_rules=state.failed_rules,
+                manual_review_rules=state.manual_review_rules,
+                not_applicable_rules=state.not_applicable_rules,
+                disabled_rules=state.disabled_rules,
+                error_rules=state.error_rules,
+                critical_failures=state.critical_failures,
+                high_failures=state.high_failures,
+            )
+        return details
+
+    def _build_tier_details(
+        self,
+        tier_accumulators: dict[ControlTier, _CategoryAccumulator],
+    ) -> dict[str, TierScoreDetail]:
+        details: dict[str, TierScoreDetail] = {}
+        for tier in (ControlTier.CORE, ControlTier.ADVANCED):
+            state = tier_accumulators.get(tier, _CategoryAccumulator())
+            details[tier.value] = TierScoreDetail(
+                tier=tier,
+                score=self._percentage(state.earned_weight, state.possible_weight),
+                earned_weight=state.earned_weight,
+                possible_weight=state.possible_weight,
                 total_rules=state.total_rules,
                 passed_rules=state.passed_rules,
                 failed_rules=state.failed_rules,

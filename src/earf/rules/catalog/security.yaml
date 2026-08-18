@@ -4,6 +4,7 @@ rules:
     description: Repository contains evidence suggesting that credentials and secrets are managed outside application source code.
     category: security
     severity: critical
+    tier: core
     version: "1.0"
     enabled: true
     applicability:
@@ -71,6 +72,7 @@ rules:
     description: AI tools and integrations run with constrained permissions.
     category: security
     severity: high
+    tier: core
     version: "1.0"
     enabled: true
     applicability:

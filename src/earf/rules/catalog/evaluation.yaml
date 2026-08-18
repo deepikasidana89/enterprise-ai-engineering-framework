@@ -4,22 +4,13 @@ rules:
     description: The repository contains automated evaluation checks for AI behavior.
     category: evaluation
     severity: high
+    tier: core
     version: "1.0"
     enabled: true
     applicability:
-      any:
-        - evidence_type: dependency
-          identifiers:
-            - openai
-            - anthropic
-            - langchain
-            - langgraph
-            - transformers
-            - llama-index
-            - litellm
-            - semantic-kernel
-            - google-generativeai
-            - azure-ai-inference
+      all:
+        - capability: uses_llm
+        - capability: has_cicd
     rationale: Automated evaluations catch regressions before release.
     failure_message: Automated AI evaluation evidence was not detected.
     recommendation: Add repeatable AI evaluation tests to CI workflows.

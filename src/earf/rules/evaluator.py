@@ -9,6 +9,7 @@ from ..exceptions import (
     InvalidEvidenceRequirementError,
 )
 from ..models import Evidence, EvidenceType, RuleDefinition
+from .capabilities import RepositoryCapabilityDetector
 from .results import RuleResult, RuleStatus
 
 
@@ -49,11 +50,28 @@ class RuleEvaluator:
                 evidence_repository,
             )
             if not applicability_match.matched:
+                applicability_reason = (
+                    applicability_match.missing_requirements[0]
+                    if applicability_match.missing_requirements
+                    else "Rule applicability requirements were not met."
+                )
                 return RuleResult(
                     rule_id=rule.id,
                     status=RuleStatus.NOT_APPLICABLE,
                     message="Rule is not applicable to this repository.",
                     matched_evidence=applicability_match.matched_evidence,
+                    metadata={
+                        "applicability_reason": applicability_reason,
+                        "applicability_evidence": [
+                            {
+                                "evidence_type": item.evidence_type.value,
+                                "identifier": item.identifier,
+                                "path": item.path,
+                                "location": item.location,
+                            }
+                            for item in self._deduplicate(applicability_match.matched_evidence)
+                        ],
+                    },
                 )
 
             match = self._evaluate_requirement(
@@ -193,7 +211,136 @@ class RuleEvaluator:
                 missing_requirements=[],
             )
 
-        return self._evaluate_requirement(applicability, evidence_repository)
+        capability_detector = RepositoryCapabilityDetector(evidence_repository)
+        return self._evaluate_applicability_requirement(
+            applicability,
+            evidence_repository,
+            capability_detector,
+        )
+
+    def _evaluate_applicability_requirement(
+        self,
+        requirement: Mapping[str, object],
+        evidence_repository: EvidenceRepository,
+        capability_detector: RepositoryCapabilityDetector,
+    ) -> RequirementMatch:
+        if not requirement:
+            return RequirementMatch(matched=True, matched_evidence=[], missing_requirements=[])
+
+        if "capability" in requirement:
+            capability_value = requirement.get("capability")
+            if not isinstance(capability_value, str) or not capability_value.strip():
+                raise InvalidEvidenceRequirementError(
+                    "applicability capability must be a non-empty string"
+                )
+            capability_name = capability_value.strip().lower()
+            if capability_name not in RepositoryCapabilityDetector.supported_capabilities():
+                supported = ", ".join(sorted(RepositoryCapabilityDetector.supported_capabilities()))
+                raise InvalidEvidenceRequirementError(
+                    f"Unsupported applicability capability {capability_value!r}. Supported: {supported}"
+                )
+
+            detected = capability_detector.detect(capability_name)
+            if detected.detected:
+                return RequirementMatch(
+                    matched=True,
+                    matched_evidence=detected.evidence,
+                    missing_requirements=[],
+                )
+
+            return RequirementMatch(
+                matched=False,
+                matched_evidence=[],
+                missing_requirements=[detected.reason],
+            )
+
+        has_any = "any" in requirement
+        has_all = "all" in requirement
+        has_not = "not" in requirement
+        operator_count = sum(1 for item in (has_any, has_all, has_not) if item)
+        if operator_count > 1:
+            raise InvalidEvidenceRequirementError(
+                "Applicability requirement cannot contain more than one of 'any', 'all', or 'not'"
+            )
+
+        if has_not:
+            child = requirement.get("not")
+            if not isinstance(child, dict):
+                raise InvalidEvidenceRequirementError("Applicability 'not' must contain a mapping")
+            child_match = self._evaluate_applicability_requirement(
+                child,
+                evidence_repository,
+                capability_detector,
+            )
+            if child_match.matched:
+                return RequirementMatch(
+                    matched=False,
+                    matched_evidence=[],
+                    missing_requirements=["NOT condition failed for applicability requirement."],
+                )
+            return RequirementMatch(
+                matched=True,
+                matched_evidence=[],
+                missing_requirements=[],
+            )
+
+        if has_any or has_all:
+            operator = "any" if has_any else "all"
+            children = requirement.get(operator)
+            if not isinstance(children, list):
+                raise InvalidEvidenceRequirementError(
+                    f"Applicability operator '{operator}' must contain a list"
+                )
+            if not children:
+                raise InvalidEvidenceRequirementError(
+                    f"Applicability operator '{operator}' requires at least one child requirement"
+                )
+
+            child_matches: list[RequirementMatch] = []
+            for child in children:
+                if not isinstance(child, dict):
+                    raise InvalidEvidenceRequirementError(
+                        f"Applicability operator '{operator}' child must be a mapping"
+                    )
+                child_matches.append(
+                    self._evaluate_applicability_requirement(
+                        child,
+                        evidence_repository,
+                        capability_detector,
+                    )
+                )
+
+            if operator == "any":
+                for child_match in child_matches:
+                    if child_match.matched:
+                        return RequirementMatch(
+                            matched=True,
+                            matched_evidence=child_match.matched_evidence,
+                            missing_requirements=[],
+                        )
+                return RequirementMatch(
+                    matched=False,
+                    matched_evidence=[],
+                    missing_requirements=[
+                        msg
+                        for child in child_matches
+                        for msg in child.missing_requirements
+                    ],
+                )
+
+            matched_evidence: list[Evidence] = []
+            missing_requirements: list[str] = []
+            for child_match in child_matches:
+                matched_evidence.extend(child_match.matched_evidence)
+                missing_requirements.extend(child_match.missing_requirements)
+            return RequirementMatch(
+                matched=not missing_requirements,
+                matched_evidence=matched_evidence,
+                missing_requirements=missing_requirements,
+            )
+
+        # Backward-compatible path for existing applicability using evidence requirements.
+        return self._evaluate_direct_requirement(requirement, evidence_repository)
 
     def _evaluate_requirement(
         self,

@@ -4,22 +4,12 @@ rules:
     description: AI model invocations configure explicit timeout values.
     category: reliability
     severity: medium
+    tier: core
     version: "1.0"
     enabled: true
     applicability:
-      any:
-        - evidence_type: dependency
-          identifiers:
-            - openai
-            - anthropic
-            - langchain
-            - langgraph
-            - transformers
-            - llama-index
-            - litellm
-            - semantic-kernel
-            - google-generativeai
-            - azure-ai-inference
+      all:
+        - capability: uses_llm
     rationale: Timeouts prevent hangs and preserve service stability.
     failure_message: Timeout configuration evidence for model calls was not detected.
     recommendation: Set timeout values for all model calls.
@@ -40,22 +30,12 @@ rules:
     description: AI model calls include retry strategy or fallback behavior.
     category: reliability
     severity: medium
+    tier: core
     version: "1.0"
     enabled: true
     applicability:
-      any:
-        - evidence_type: dependency
-          identifiers:
-            - openai
-            - anthropic
-            - langchain
-            - langgraph
-            - transformers
-            - llama-index
-            - litellm
-            - semantic-kernel
-            - google-generativeai
-            - azure-ai-inference
+      all:
+        - capability: uses_llm
     rationale: Retries and fallback reduce transient failure impact.
     failure_message: Retry or resilience implementation evidence was not detected.
     recommendation: Implement bounded retries or alternate provider fallback.

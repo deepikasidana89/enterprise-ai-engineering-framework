@@ -35,6 +35,11 @@ class Severity(Enum):
     INFO = "INFO"
 
 
+class ControlTier(Enum):
+    CORE = "core"
+    ADVANCED = "advanced"
+
+
 class EvidenceType(Enum):
     FILE = "FILE"
     DEPENDENCY = "DEPENDENCY"
@@ -89,6 +94,7 @@ class RuleDefinition:
     description: str
     category: str
     severity: Severity
+    tier: ControlTier = ControlTier.CORE
     version: str = "1.0"
     enabled: bool = True
     applicability: Metadata = field(default_factory=dict)
@@ -116,6 +122,9 @@ class RuleDefinition:
             raise ValueError(
                 f"id must match pattern ^[A-Z]{{3}}-\\d{{3}}$, got {self.id!r}"
             )
+
+        if not isinstance(self.tier, ControlTier):
+            raise ValueError(f"tier must be a ControlTier, got {type(self.tier).__name__}")
 
 
 @dataclass

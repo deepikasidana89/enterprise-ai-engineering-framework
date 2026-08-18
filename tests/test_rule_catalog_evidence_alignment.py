@@ -73,6 +73,7 @@ def test_populated_repository_satisfies_all_rules(tmp_path: Path) -> None:
         "\n".join(
             [
                 "openai==1.0.0",
+                "fastapi==0.110.0",
                 "opentelemetry-sdk==1.0.0",
                 "tenacity==8.2.0",
                 "pydantic==2.8.0",
@@ -90,6 +91,7 @@ def test_populated_repository_satisfies_all_rules(tmp_path: Path) -> None:
                 'version = "0.1.0"',
                 "dependencies = [",
                 '  "openai>=1.0",',
+                '  "fastapi>=0.110",',
                 '  "opentelemetry-sdk>=1.0",',
                 '  "tenacity>=8.2",',
                 '  "pydantic>=2.8",',

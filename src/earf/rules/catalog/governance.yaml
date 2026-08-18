@@ -4,6 +4,7 @@ rules:
     description: The repository identifies an accountable AI system owner.
     category: governance
     severity: high
+    tier: core
     version: "1.0"
     enabled: true
     applicability:
@@ -23,6 +24,7 @@ rules:
     description: The repository states the intended purpose and scope of the AI system.
     category: governance
     severity: medium
+    tier: core
     version: "1.0"
     enabled: true
     applicability:

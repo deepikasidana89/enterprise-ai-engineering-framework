@@ -97,6 +97,9 @@ Report JSON schema overview:
 - `generated_at`
 - `earf_version`
 - `overall_score`
+- `core_readiness`
+- `advanced_controls`
+- `assessment_coverage`
 - `production_status`
 - `total_evidence`
 - `metadata`
@@ -114,15 +117,33 @@ JSON example:
 	"repository_name": "enterprise-ai-readiness-framework",
 	"generated_at": "2026-07-22T00:00:00Z",
 	"earf_version": "0.1.0-dev",
+	"core_readiness": {
+		"score": 82.0,
+		"passed": 14,
+		"failed": 2,
+		"not_applicable": 5
+	},
+	"advanced_controls": {
+		"score": 64.0,
+		"passed": 4,
+		"failed": 7,
+		"improvement_opportunities": 7
+	},
+	"assessment_coverage": {
+		"percentage": 73.0,
+		"evaluated": 16,
+		"applicable": 22
+	},
 	"overall_score": 11.1,
 	"production_status": "NOT_READY"
 }
 ```
 
 Markdown reports include:
-
 - title and repository metadata
-- overall score and production readiness
+- overall assessment (core readiness, advanced controls, assessment coverage, and overall score)
+- production readiness
+- core controls and advanced opportunities summaries
 - category table
 - rule table
 - summary table
@@ -139,6 +160,24 @@ EARF Version: 0.1.0-dev
 ```
 
 Note: EARF findings indicate the presence or absence of implementation evidence. They do not prove that a control is fully effective and do not constitute certification, compliance approval, legal advice, or security assurance.
+
+## Scoring Semantics
+
+- Production readiness is based primarily on applicable `core` controls.
+- Advanced controls represent enterprise AI maturity beyond baseline production readiness and are reported separately.
+- The existing overall score is preserved for compatibility and trend tracking.
+
+### Assessment Coverage
+
+Assessment Coverage represents the percentage of applicable EARF controls that completed automated evaluation.
+
+- Evaluated: controls with status `PASS`, `FAIL`, or `MANUAL_REVIEW`.
+- Applicable: controls with status `PASS`, `FAIL`, `MANUAL_REVIEW`, or `ERROR`.
+- Excluded from coverage: `NOT_APPLICABLE` and `DISABLED`.
+
+Assessment Coverage does not represent the percentage of an application's implementation inspected or verified.
+
+EARF detects engineering evidence. A `PASS` indicates supported evidence was detected; it does not prove that a control is correctly or completely implemented.
 
 ## Key Concepts
 
@@ -159,12 +198,10 @@ Note: EARF findings indicate the presence or absence of implementation evidence.
 7. Security, Compliance & Governance
 8. Team, Skills & Organization
 
-### Overall Readiness Thresholds
-- **1.0-1.5:** Not production-ready
-- **1.6-2.5:** Minimal readiness (limited production use)
-- **2.6-3.5:** Production-ready (standard practices)
-- **3.6-4.5:** Highly production-ready (continuous optimization)
-- **4.6-5.0:** Exceptional readiness (industry best practices)
+### Core Readiness Thresholds
+- **>= 85.0:** READY
+- **>= 70.0 and < 85.0:** READY_WITH_WARNINGS
+- **< 70.0:** NOT_READY
 
 ## Using This Framework
 

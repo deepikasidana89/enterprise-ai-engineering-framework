@@ -4,6 +4,16 @@
 
 The EARF uses a structured scoring approach to quantify organizational AI readiness. Scores are assigned at multiple levels: assessment questions, pillar categories, pillars, and an overall maturity score.
 
+For automated repository assessments, EARF also reports deterministic control outcomes with separate core and advanced views:
+
+- **Core Readiness (0-100):** Weighted score over applicable `core` controls.
+- **Advanced Controls Score (0-100):** Weighted score over applicable `advanced` controls.
+- **Assessment Coverage (%):** Applicable controls that completed automated evaluation.
+
+Production status is determined primarily from **Core Readiness** and core critical failures. Advanced control gaps are reported as maturity opportunities and do not normally block baseline production readiness.
+
+Assessment Coverage reflects EARF rule-evaluation completion, not percentage of application implementation inspected.
+
 ---
 
 ## Score Hierarchy

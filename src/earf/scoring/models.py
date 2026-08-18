@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
+from ..models import ControlTier
+
 
 class ProductionReadiness(Enum):
     READY = "READY"
@@ -28,6 +30,30 @@ class CategoryScoreDetail:
 
 
 @dataclass(frozen=True)
+class TierScoreDetail:
+    tier: ControlTier
+    score: float
+    earned_weight: int
+    possible_weight: int
+    total_rules: int
+    passed_rules: int
+    failed_rules: int
+    manual_review_rules: int
+    not_applicable_rules: int
+    disabled_rules: int
+    error_rules: int
+    critical_failures: int
+    high_failures: int
+
+
+@dataclass(frozen=True)
+class AssessmentCoverage:
+    percentage: float
+    evaluated: int
+    applicable: int
+
+
+@dataclass(frozen=True)
 class ReadinessScore:
     overall_score: float
     category_scores: dict[str, float]
@@ -43,6 +69,12 @@ class ReadinessScore:
     summary: dict[str, object] = field(default_factory=dict)
     production_readiness: ProductionReadiness = ProductionReadiness.NOT_READY
     category_details: dict[str, CategoryScoreDetail] = field(default_factory=dict)
+    core_readiness_score: float = 0.0
+    advanced_controls_score: float = 0.0
+    tier_details: dict[str, TierScoreDetail] = field(default_factory=dict)
+    assessment_coverage: AssessmentCoverage = field(
+        default_factory=lambda: AssessmentCoverage(percentage=0.0, evaluated=0, applicable=0)
+    )
 
     def top_failing_categories(self, limit: int = 3) -> list[str]:
         ranked = sorted(

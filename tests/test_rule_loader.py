@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from earf.exceptions import DuplicateRuleError, RuleLoadError, RuleValidationError
+from earf.models import ControlTier
 from earf.rules.loader import YamlRuleLoader
 
 
@@ -176,5 +177,34 @@ def test_duplicate_ids_across_files(tmp_path: Path) -> None:
 
 def test_empty_yaml_rejected(tmp_path: Path) -> None:
     p = _write(tmp_path / "empty.yaml", "")
+    with pytest.raises(RuleValidationError):
+        YamlRuleLoader().load(p)
+
+
+def test_tier_defaults_to_core_when_missing(tmp_path: Path) -> None:
+    p = _write(tmp_path / "rules.yaml", _valid_rule())
+
+    rules = YamlRuleLoader().load(p)
+
+    assert rules[0].tier == ControlTier.CORE
+
+
+def test_tier_accepts_advanced_value(tmp_path: Path) -> None:
+    p = _write(
+        tmp_path / "rules.yaml",
+        _valid_rule().replace("severity: high", "severity: high\n    tier: advanced"),
+    )
+
+    rules = YamlRuleLoader().load(p)
+
+    assert rules[0].tier == ControlTier.ADVANCED
+
+
+def test_invalid_tier_is_rejected(tmp_path: Path) -> None:
+    p = _write(
+        tmp_path / "rules.yaml",
+        _valid_rule().replace("severity: high", "severity: high\n    tier: experimental"),
+    )
+
     with pytest.raises(RuleValidationError):
         YamlRuleLoader().load(p)

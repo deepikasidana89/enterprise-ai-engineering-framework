@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from earf.models import (
+    ControlTier,
     ScanStatus,
     Severity,
     EvidenceType,
@@ -80,6 +81,19 @@ def test_rule_definition_valid_creation() -> None:
     )
     assert rule.version == "1.0"
     assert rule.enabled is True
+    assert rule.tier == ControlTier.CORE
+
+
+def test_rule_definition_supports_advanced_tier() -> None:
+    rule = RuleDefinition(
+        id="GOV-001",
+        title="Ownership documented",
+        description="Owner exists",
+        category="governance",
+        severity=Severity.HIGH,
+        tier=ControlTier.ADVANCED,
+    )
+    assert rule.tier == ControlTier.ADVANCED
 
 
 def test_rule_definition_invalid_id() -> None:
@@ -101,6 +115,18 @@ def test_rule_definition_empty_required_fields() -> None:
             description="Owner exists",
             category="governance",
             severity=Severity.HIGH,
+        )
+
+
+def test_rule_definition_invalid_tier_type() -> None:
+    with pytest.raises(ValueError):
+        RuleDefinition(
+            id="GOV-001",
+            title="Ownership documented",
+            description="Owner exists",
+            category="governance",
+            severity=Severity.HIGH,
+            tier="core",  # type: ignore[arg-type]
         )
 
 

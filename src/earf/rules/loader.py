@@ -7,7 +7,7 @@ from typing import Any
 import yaml
 
 from ..exceptions import DuplicateRuleError, RuleLoadError, RuleValidationError
-from ..models import RuleDefinition, Severity
+from ..models import ControlTier, RuleDefinition, Severity
 
 
 def _ensure_dict(value: Any, field_name: str, rule_id: str) -> dict[str, Any]:
@@ -179,6 +179,21 @@ class YamlRuleLoader(RuleLoader):
         metadata = data.get("metadata", {})
 
         try:
+            tier_value = data.get("tier", ControlTier.CORE.value)
+            if not isinstance(tier_value, str):
+                raise RuleValidationError(
+                    f"Rule {rule_id}: tier must be a string. Supported values: core, advanced"
+                )
+            normalized_tier = tier_value.strip().lower()
+            if normalized_tier == ControlTier.CORE.value:
+                tier = ControlTier.CORE
+            elif normalized_tier == ControlTier.ADVANCED.value:
+                tier = ControlTier.ADVANCED
+            else:
+                raise RuleValidationError(
+                    f"Rule {rule_id}: invalid tier {tier_value!r}. Supported values: core, advanced"
+                )
+
             return RuleDefinition(
                 id=rule_id,
                 title=_ensure_non_empty_string(data.get("title"), "title", rule_id),
@@ -193,6 +208,7 @@ class YamlRuleLoader(RuleLoader):
                     rule_id,
                 ),
                 severity=severity,
+                tier=tier,
                 version=_ensure_non_empty_string(
                     data.get("version", "1.0"),
                     "version",

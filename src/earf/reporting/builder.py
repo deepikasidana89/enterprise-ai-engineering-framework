@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Iterable
 
 from .. import __version__
 from ..evidence import EvidenceRepository
-from ..models import RepositoryContext
+from ..models import ControlTier, RepositoryContext
 from ..rules.catalog import RuleCatalog
 from ..rules.results import RuleResult, RuleStatus
 from ..scoring.models import ReadinessScore
@@ -33,12 +33,15 @@ class ReportBuilder:
         high_findings: list[dict[str, object]] = []
         recommendations: list[dict[str, str]] = []
         seen_recommendations: set[str] = set()
+        core_gaps: list[dict[str, object]] = []
+        advanced_opportunities: list[dict[str, object]] = []
 
         for result in ordered_results:
             rule = rule_lookup.get(result.rule_id)
             title = rule.title if rule is not None else ""
             category = rule.category if rule is not None else ""
             severity = rule.severity.name.lower() if rule is not None else ""
+            tier = rule.tier.value if rule is not None else ControlTier.CORE.value
             recommendation = rule.recommendation if rule is not None else ""
 
             rule_details.append(
@@ -47,9 +50,11 @@ class ReportBuilder:
                     "title": title,
                     "category": category,
                     "severity": severity,
+                    "tier": tier,
                     "status": result.status.name,
                     "message": result.message,
                     "failure_message": result.message if result.status in {RuleStatus.FAIL, RuleStatus.MANUAL_REVIEW} else "",
+                    "applicability_reason": str(result.metadata.get("applicability_reason", "")),
                     "recommendation": recommendation,
                     "error": result.error,
                     "missing_requirements": list(result.missing_requirements),
@@ -72,6 +77,11 @@ class ReportBuilder:
                 critical_findings.append(finding)
             elif rule.severity.name == "HIGH":
                 high_findings.append(finding)
+
+            if rule.tier == ControlTier.CORE:
+                core_gaps.append(finding)
+            else:
+                advanced_opportunities.append(finding)
 
             recommendation_text = rule.recommendation.strip()
             if recommendation_text and recommendation_text not in seen_recommendations:
@@ -96,6 +106,8 @@ class ReportBuilder:
                 "critical_findings": critical_findings,
                 "high_findings": high_findings,
                 "recommendations": recommendations,
+                    "core_gaps": core_gaps,
+                    "advanced_opportunities": advanced_opportunities,
             },
             analysis_result=analysis_result,
         )

@@ -4,6 +4,7 @@ rules:
     description: The codebase defines the model or provider used for AI interactions.
     category: modeling
     severity: high
+    tier: core
     version: "1.0"
     enabled: true
     applicability:
@@ -52,6 +53,7 @@ rules:
     description: The repository documents model versions or version pinning strategy.
     category: modeling
     severity: medium
+    tier: advanced
     version: "1.0"
     enabled: true
     applicability:
