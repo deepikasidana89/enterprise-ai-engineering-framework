@@ -1,363 +1,199 @@
-# EARF
-## Enterprise AI Readiness Framework
+# Enterprise AI Readiness Framework (EARF)
 
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-green.svg)]()
-[![Status](https://img.shields.io/badge/status-Beta-orange.svg)]()
+> **Is your AI system actually ready for production?**
 
-EARF (Enterprise AI Readiness Framework) is an open-source framework for **evaluating whether AI-powered software is ready for enterprise production**.
+**EARF** is an open-source engineering framework and CLI for evaluating AI application repositories for evidence of **reliability, safety, security, evaluation, observability, privacy, governance, and operational readiness**.
 
-Unlike traditional code quality tools that focus on software correctness, EARF evaluates **AI engineering readiness** across governance, safety, security, reliability, observability, modeling, and evaluation.
+Instead of asking only *“How accurate is the model?”*, EARF asks a broader engineering question:
 
-EARF performs deterministic analysis of repositories to identify missing engineering practices before AI systems reach production.
+> **Does the system around the model demonstrate the engineering practices needed to operate AI responsibly and reliably in production?**
 
----
-
-# Why EARF?
-
-Building an AI application involves more than selecting the right model.
-
-Enterprise AI systems require engineering practices such as:
-
-- Model configuration
-- AI safety controls
-- Input validation
-- Output guardrails
-- Governance documentation
-- Observability
-- Evaluation pipelines
-- Operational reliability
-- Security
-
-Many organizations evaluate model quality but overlook engineering readiness.
-
-EARF helps bridge that gap.
+EARF turns repository evidence into deterministic rule evaluations, severity-weighted readiness scores, and actionable reports.
 
 ---
 
-# Features
+## 🚀 What EARF Does
 
-- Declarative rule engine
-- Repository evidence collection
-- Enterprise readiness scoring
-- Deterministic evaluation
-- Markdown reports
-- JSON reports
-- CLI
-- GitHub Actions integration
-- Extensible rule catalog
-- Open architecture
+EARF analyzes evidence available in an AI application's repository and helps teams:
 
----
+* 🔎 **Assess** enterprise AI engineering practices
+* 📊 **Score** overall and category-level readiness
+* 🚨 **Identify** critical and high-severity gaps
+* 🛡️ **Evaluate** reliability, safety, security, governance, and operational controls
+* 📋 **Generate** console, JSON, and Markdown readiness reports
+* 🧭 **Prioritize** engineering improvements before production
 
-# Readiness Categories
+The goal is not to certify an AI system.
 
-EARF currently evaluates repositories across:
-
-| Category | Purpose |
-|-----------|----------|
-| Governance | Ownership, documentation, accountability |
-| Modeling | Model configuration and versioning |
-| Safety | Input validation and output guardrails |
-| Reliability | Timeouts, retries, fallback strategies |
-| Observability | Logging, monitoring, telemetry |
-| Security | Secrets and least-privilege access |
-| Evaluation | Automated AI evaluation practices |
+The goal is to make **AI production readiness more measurable, repeatable, and evidence-driven.**
 
 ---
 
-# Installation
+## ⚡ Quick Start
+
+Clone EARF:
 
 ```bash
-pip install earf
+git clone https://github.com/deepikasidana89/enterprise-ai-engineering-framework.git
+cd enterprise-ai-engineering-framework
 ```
 
-Or install from source:
+Install locally:
 
 ```bash
-git clone https://github.com/<username>/enterprise-ai-readiness-framework.git
-
-cd enterprise-ai-readiness-framework
-
 pip install -e .
 ```
 
----
-
-# Quick Start
-
-Collect repository evidence:
+Run EARF against an AI project:
 
 ```bash
-earf evidence .
+earf report /path/to/your-ai-project
 ```
 
-Evaluate rules:
+Or:
 
 ```bash
-earf evaluate .
+python -m earf report /path/to/your-ai-project
 ```
 
-Calculate readiness:
+Generate a Markdown report:
 
 ```bash
-earf score .
+python -m earf score .
 ```
 
-Generate a report:
+Report generation:
 
 ```bash
-earf report .
+python -m earf report .
+python -m earf report . --format json
+python -m earf report . --format markdown
+python -m earf report . --format json --output report.json
+python -m earf report . --format markdown --output report.md
 ```
 
-Export JSON:
+Default report filenames:
 
-```bash
-earf report . --format json
-```
+- JSON: `earf-report.json`
+- Markdown: `EARF_REPORT.md`
 
-Export Markdown:
+Console example:
 
-```bash
-earf report . --format markdown
-```
+```text
+EARF Enterprise AI Readiness Report
 
----
+Repository: enterprise-ai-readiness-framework
+Generated: 2026-07-22T00:00:00Z
+EARF Version: 0.1.0-dev
 
-# Example Output
-
-```
 Overall Readiness
 
-78.4 / 100
-
-Production Status
-
-READY_WITH_WARNINGS
-
-Category Scores
-
-Governance       100
-Security          90
-Safety            75
-Reliability       60
-Observability     80
-Evaluation        95
-
-Passed Rules      18
-Failed Rules       4
+11.1 / 100
 ```
 
----
+Report JSON schema overview:
 
-# Architecture
+- `repository_name`
+- `generated_at`
+- `earf_version`
+- `overall_score`
+- `production_status`
+- `total_evidence`
+- `metadata`
+- `category_scores`
+- `rule_results`
+- `summary`
+- `critical_findings`
+- `high_findings`
+- `recommendations`
 
-```
-Repository
-      │
-      ▼
-Repository Loader
-      │
-      ▼
-Evidence Collection
-      │
-      ▼
-Evidence Repository
-      │
-      ▼
-Rule Evaluation
-      │
-      ▼
-Scoring Engine
-      │
-      ▼
-Report Builder
-      │
-      ▼
-Readiness Report
-```
+JSON example:
 
-The EARFPipeline orchestrates the complete analysis workflow while keeping the CLI thin and reusable across future integrations.
-
----
-
-# Rule Engine
-
-Rules are defined declaratively using YAML.
-
-Example:
-
-```yaml
-id: GOV-001
-
-title: AI ownership documented
-
-category: governance
-
-severity: high
-
-evidence_requirements:
-
-  any:
-
-    - evidence_type: file
-
-      identifiers:
-
-        - CODEOWNERS
+```json
+{
+	"repository_name": "enterprise-ai-readiness-framework",
+	"generated_at": "2026-07-22T00:00:00Z",
+	"earf_version": "0.1.0-dev",
+	"overall_score": 11.1,
+	"production_status": "NOT_READY"
+}
 ```
 
-This enables new enterprise checks without changing Python code.
+Markdown reports include:
 
----
+- title and repository metadata
+- overall score and production readiness
+- category table
+- rule table
+- summary table
+- deterministic recommendations from the rule catalog
 
-# Reports
+Markdown example:
 
-EARF currently supports:
+```markdown
+# EARF Enterprise AI Readiness Report
 
-- Console
-- JSON
-- Markdown
-
-Reports include:
-
-- Overall readiness score
-- Production status
-- Category scores
-- Rule evaluation summary
-- Critical findings
-- Recommendations
-
----
-
-# SEC-001 Interpretation
-
-SEC-001 evaluates repository evidence for externalized secret management.
-
-It does not prove that hard-coded secrets are absent.
-
-Use `earf evaluate . --show-evidence` to inspect which evidence triggered the result.
-
-SEC-001 outcomes:
-
-- PASS: strong provider/configuration evidence was detected.
-- MANUAL_REVIEW: potential custom secret-management abstraction was detected, but evidence is not strong enough for definitive PASS.
-- FAIL: no supported evidence of externalized secret management was detected.
-
-Examples:
-
-- Known provider: dependency and usage for AWS Secrets Manager, Azure Key Vault, HashiCorp Vault, GCP Secret Manager, or Kubernetes `secretKeyRef`.
-- Custom implementation candidate: names such as `CredentialProvider` or `SecretManager` with supporting signals.
-- Weak-only signals: a single generic environment variable access or mention of "secret" in text is not sufficient.
-
----
-
-# GitHub Actions
-
-EARF can be executed automatically during CI to generate readiness reports for pull requests and repositories.
-
-See:
-
-```
-.github/workflows/
+Repository: enterprise-ai-readiness-framework
+Generated: 2026-07-22T00:00:00Z
+EARF Version: 0.1.0-dev
 ```
 
----
+Note: EARF findings indicate the presence or absence of implementation evidence. They do not prove that a control is fully effective and do not constitute certification, compliance approval, legal advice, or security assurance.
 
-# Repository Structure
+## Key Concepts
 
-```
-src/
-tests/
-docs/
-examples/
-rules/
-```
+### The 5 Maturity Levels
+- **Level 1: Initial** - Ad-hoc, no formal processes
+- **Level 2: Managed** - Basic processes documented
+- **Level 3: Defined** - Standardized and automated
+- **Level 4: Quantitatively Managed** - Measured and optimized
+- **Level 5: Optimized** - Continuous improvement, innovation
 
----
+### The 8 Assessment Pillars
+1. Business Strategy & Alignment
+2. Data Governance & Quality
+3. Data Architecture & Infrastructure
+4. Model Development & Experimentation
+5. Model Deployment & Operations
+6. Monitoring, Observability & Maintenance
+7. Security, Compliance & Governance
+8. Team, Skills & Organization
 
-# Development
+### Overall Readiness Thresholds
+- **1.0-1.5:** Not production-ready
+- **1.6-2.5:** Minimal readiness (limited production use)
+- **2.6-3.5:** Production-ready (standard practices)
+- **3.6-4.5:** Highly production-ready (continuous optimization)
+- **4.6-5.0:** Exceptional readiness (industry best practices)
 
-Clone the repository:
+## Using This Framework
 
-```bash
-git clone ...
+### For Organizations
+- Assess current AI readiness objectively
+- Identify gaps and improvement opportunities
+- Prioritize investments in AI infrastructure
+- Plan realistic maturity progression
 
-pip install -e ".[dev]"
-```
+### For Teams
+- Establish common language for AI readiness
+- Set clear standards and expectations
+- Guide technical decision-making
+- Support hiring and skills development
 
-Run validation:
+### For Leaders
+- Make data-driven investment decisions
+- Balance risk and innovation
+- Track progress over time
+- Benchmark against industry standards
 
-```bash
-pytest
+## Contributing
 
-ruff check .
+We welcome contributions from the community. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Reporting issues
+- Suggesting improvements
+- Submitting assessments
+- Sharing best practices
 
-mypy src/earf
-```
+## License
 
-Build:
-
-```bash
-python -m build
-```
-
----
-
-# Examples
-
-The repository includes sample projects demonstrating both production-ready and non-production-ready AI repositories.
-
-See:
-
-```
-examples/
-```
-
----
-
-# Roadmap
-
-Planned future enhancements include:
-
-- Additional enterprise rule packs
-- Expanded AI engineering coverage
-- Community-contributed rules
-- Additional reporting formats
-
----
-
-# Contributing
-
-Contributions are welcome.
-
-Please read:
-
-- CONTRIBUTING.md
-- CODE_OF_CONDUCT.md
-
----
-
-# License
-
-MIT License.
-
----
-
-# Citation
-
-If EARF contributes to your research or engineering work, please cite the project once the citation information becomes available.
-
----
-
-# Author
-
-**Deepika Sidana**
-
-Enterprise AI Engineering • Machine Learning • Distributed Systems • Responsible AI
-
----
-
-## Vision
-
-EARF aims to make **Enterprise AI Readiness** as measurable and repeatable as traditional software quality, helping engineering teams build AI systems that are not only intelligent—but also reliable, secure, governable, and production-ready.
+This framework is shared under the [MIT License](LICENSE).
