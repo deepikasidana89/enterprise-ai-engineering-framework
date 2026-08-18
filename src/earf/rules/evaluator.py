@@ -7,10 +7,19 @@ from typing import Mapping
 from ..evidence import EvidenceRepository
 from ..exceptions import (
     InvalidEvidenceRequirementError,
-    UnsupportedApplicabilityError,
 )
 from ..models import Evidence, EvidenceType, RuleDefinition
 from .results import RuleResult, RuleStatus
+
+
+SEC_001_RULE_ID = "SEC-001"
+SEC_001_POTENTIAL_IDENTIFIERS = {
+    "sec.externalized_secret.custom_abstraction",
+}
+SEC_001_SUPPORTING_IDENTIFIERS = {
+    "sec.externalized_secret.sensitive_env_access",
+}
+SEC_001_WEAK_FILE_IDENTIFIERS = {".env.example", "SECURITY.md"}
 
 
 @dataclass(frozen=True)
@@ -34,16 +43,34 @@ class RuleEvaluator:
             )
 
         try:
-            applicable = self._evaluate_applicability(rule)
-            if not applicable:
+            applicability_match = self._evaluate_applicability(
+                rule,
+                evidence_repository,
+            )
+            if not applicability_match.matched:
                 return RuleResult(
                     rule_id=rule.id,
                     status=RuleStatus.NOT_APPLICABLE,
-                    message="Rule is not applicable.",
+                    message="Rule is not applicable to this repository.",
+                    matched_evidence=applicability_match.matched_evidence,
                 )
 
-            match = self._evaluate_requirement(rule.evidence_requirements, evidence_repository)
-            matched_evidence = self._deduplicate(match.matched_evidence)
+            match = self._evaluate_requirement(
+                rule.evidence_requirements,
+                evidence_repository,
+            )
+            matched_evidence = self._deduplicate(
+                applicability_match.matched_evidence + match.matched_evidence
+            )
+
+            if rule.id == SEC_001_RULE_ID:
+                return self._evaluate_sec_001(
+                    rule,
+                    evidence_repository,
+                    match,
+                    matched_evidence,
+                )
+
             if match.matched:
                 return RuleResult(
                     rule_id=rule.id,
@@ -59,7 +86,7 @@ class RuleEvaluator:
                 matched_evidence=matched_evidence,
                 missing_requirements=match.missing_requirements,
             )
-        except (InvalidEvidenceRequirementError, UnsupportedApplicabilityError) as exc:
+        except InvalidEvidenceRequirementError as exc:
             return RuleResult(
                 rule_id=rule.id,
                 status=RuleStatus.ERROR,
@@ -74,22 +101,92 @@ class RuleEvaluator:
                 error=str(exc),
             )
 
-    def _evaluate_applicability(self, rule: RuleDefinition) -> bool:
+    def _evaluate_sec_001(
+        self,
+        rule: RuleDefinition,
+        evidence_repository: EvidenceRepository,
+        match: RequirementMatch,
+        matched_evidence: list[Evidence],
+    ) -> RuleResult:
+        if match.matched:
+            observed = evidence_repository.find(source="secret_management")
+            return RuleResult(
+                rule_id=rule.id,
+                status=RuleStatus.PASS,
+                message="Externalized secret-management evidence detected.",
+                matched_evidence=self._deduplicate(matched_evidence + observed),
+            )
+
+        potential_evidence = self._deduplicate(
+            self._find_sec_001_potential_evidence(evidence_repository)
+        )
+        if potential_evidence:
+            return RuleResult(
+                rule_id=rule.id,
+                status=RuleStatus.MANUAL_REVIEW,
+                message=(
+                    "Potential custom secret-management evidence detected. "
+                    "Manual review recommended."
+                ),
+                matched_evidence=potential_evidence,
+                missing_requirements=match.missing_requirements,
+            )
+
+        return RuleResult(
+            rule_id=rule.id,
+            status=RuleStatus.FAIL,
+            message="No supported evidence of externalized secret management was detected.",
+            matched_evidence=[],
+            missing_requirements=match.missing_requirements,
+        )
+
+    def _find_sec_001_potential_evidence(
+        self,
+        evidence_repository: EvidenceRepository,
+    ) -> list[Evidence]:
+        potential = [
+            item
+            for item in evidence_repository.find(source="secret_management")
+            if item.identifier in SEC_001_POTENTIAL_IDENTIFIERS
+        ]
+
+        supporting = [
+            item
+            for item in evidence_repository.find(source="secret_management")
+            if item.identifier in SEC_001_SUPPORTING_IDENTIFIERS
+        ]
+        weak_files = [
+            item
+            for item in evidence_repository.find(evidence_type=EvidenceType.FILE)
+            if item.identifier in SEC_001_WEAK_FILE_IDENTIFIERS
+        ]
+
+        if potential:
+            return potential + supporting + weak_files
+        return []
+
+    def _evaluate_applicability(
+        self,
+        rule: RuleDefinition,
+        evidence_repository: EvidenceRepository,
+    ) -> RequirementMatch:
         applicability = rule.applicability
         if not applicability:
-            return True
+            return RequirementMatch(matched=True, matched_evidence=[], missing_requirements=[])
 
-        if set(applicability.keys()) != {"always"}:
-            raise UnsupportedApplicabilityError(
-                f"Rule {rule.id}: unsupported applicability structure {applicability}"
+        if set(applicability.keys()) == {"always"}:
+            always = applicability.get("always")
+            if not isinstance(always, bool):
+                raise InvalidEvidenceRequirementError(
+                    f"Rule {rule.id}: applicability.always must be a boolean"
+                )
+            return RequirementMatch(
+                matched=always,
+                matched_evidence=[],
+                missing_requirements=[],
             )
 
-        always = applicability.get("always")
-        if not isinstance(always, bool):
-            raise UnsupportedApplicabilityError(
-                f"Rule {rule.id}: applicability.always must be a boolean"
-            )
-        return always
+        return self._evaluate_requirement(applicability, evidence_repository)
 
     def _evaluate_requirement(
         self,

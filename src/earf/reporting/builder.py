@@ -55,7 +55,7 @@ class ReportBuilder:
                 }
             )
 
-            if result.status != RuleStatus.FAIL or rule is None:
+            if result.status not in {RuleStatus.FAIL, RuleStatus.MANUAL_REVIEW} or rule is None:
                 continue
 
             finding = {"rule_id": rule.id, "title": rule.title}

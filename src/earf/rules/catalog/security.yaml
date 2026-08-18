@@ -1,21 +1,68 @@
 rules:
   - id: SEC-001
-    title: Secrets are not hard-coded
-    description: Credentials and secrets are managed outside source code.
+    title: Externalized secret management evidence is present
+    description: Repository contains evidence suggesting that credentials and secrets are managed outside application source code.
     category: security
     severity: critical
     version: "1.0"
     enabled: true
     applicability:
       always: true
-    rationale: Hard-coded secrets create high-impact compromise risk.
-    recommendation: Move secrets to environment variables or secret managers.
+    rationale: Externalized secret management reduces credential exposure risk and supports operational controls.
+    recommendation: Integrate a supported secret manager or documented internal secret-management abstraction with implementation evidence.
     tags: [security, secrets]
     references: []
     evidence_requirements:
       any:
-        - evidence_type: file
-          identifiers: [.env.example, SECURITY.md]
+        - all:
+            - evidence_type: dependency
+              identifiers:
+                - hvac
+                - boto3
+                - azure-keyvault-secrets
+                - google-cloud-secret-manager
+                - aws-secretsmanager-caching
+                - '@aws-sdk/client-secrets-manager'
+                - '@azure/keyvault-secrets'
+                - '@google-cloud/secret-manager'
+                - secretsmanager
+                - software.amazon.awssdk:secretsmanager
+                - com.amazonaws:aws-java-sdk-secretsmanager
+                - com.bettercloud:vault-java-driver
+            - evidence_type: configuration
+              source: secret_management
+              identifiers:
+                - sec.externalized_secret.vault_usage
+                - sec.externalized_secret.aws_usage
+                - sec.externalized_secret.azure_usage
+                - sec.externalized_secret.gcp_usage
+                - sec.externalized_secret.kubernetes_secret_ref
+        - evidence_type: configuration
+          source: secret_management
+          identifiers:
+            - sec.externalized_secret.vault_usage
+            - sec.externalized_secret.aws_usage
+            - sec.externalized_secret.azure_usage
+            - sec.externalized_secret.gcp_usage
+            - sec.externalized_secret.kubernetes_secret_ref
+        - all:
+            - evidence_type: file
+              identifiers: [.env.example]
+            - evidence_type: file
+              identifiers: [SECURITY.md]
+        - all:
+            - evidence_type: configuration
+              source: secret_management
+              identifiers: [sec.externalized_secret.custom_abstraction]
+            - evidence_type: configuration
+              source: secret_management
+              identifiers: [sec.externalized_secret.sensitive_env_access]
+        - all:
+            - evidence_type: configuration
+              source: secret_management
+              identifiers: [sec.externalized_secret.custom_abstraction]
+            - evidence_type: file
+              identifiers: [SECURITY.md]
     metadata: {}
 
   - id: SEC-002
@@ -26,7 +73,19 @@ rules:
     version: "1.0"
     enabled: true
     applicability:
-      always: true
+      any:
+        - evidence_type: dependency
+          identifiers:
+            - openai
+            - anthropic
+            - langchain
+            - langgraph
+            - transformers
+            - llama-index
+            - litellm
+            - semantic-kernel
+            - google-generativeai
+            - azure-ai-inference
     rationale: Least privilege limits blast radius of compromised workflows.
     recommendation: Restrict tool scopes and runtime permissions.
     tags: [security, least-privilege]

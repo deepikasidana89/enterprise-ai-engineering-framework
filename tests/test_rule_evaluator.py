@@ -4,6 +4,27 @@ from earf.rules.evaluator import RuleEvaluator
 from earf.rules.results import RuleResult, RuleStatus
 
 
+AI_DEPENDENCY_APPLICABILITY = {
+    "any": [
+        {
+            "evidence_type": "dependency",
+            "identifiers": [
+                "openai",
+                "anthropic",
+                "langchain",
+                "langgraph",
+                "transformers",
+                "llama-index",
+                "litellm",
+                "semantic-kernel",
+                "google-generativeai",
+                "azure-ai-inference",
+            ],
+        }
+    ]
+}
+
+
 def _rule(
     rule_id: str = "GOV-001",
     *,
@@ -18,7 +39,7 @@ def _rule(
         category="governance",
         severity=Severity.HIGH,
         enabled=enabled,
-        applicability=applicability or {"always": True},
+        applicability={"always": True} if applicability is None else applicability,
         evidence_requirements=evidence_requirements or {},
     )
 
@@ -43,6 +64,7 @@ def _evidence(
 def test_rule_status_values() -> None:
     assert RuleStatus.PASS.value == "pass"
     assert RuleStatus.FAIL.value == "fail"
+    assert RuleStatus.MANUAL_REVIEW.value == "manual_review"
     assert RuleStatus.NOT_APPLICABLE.value == "not_applicable"
     assert RuleStatus.DISABLED.value == "disabled"
     assert RuleStatus.ERROR.value == "error"
@@ -68,6 +90,75 @@ def test_direct_requirement_matching_pass() -> None:
 
     assert result.status == RuleStatus.PASS
     assert len(result.matched_evidence) == 1
+
+
+def test_rule_without_applicability_behaves_normally() -> None:
+    repo = EvidenceRepository()
+    repo.add(_evidence(EvidenceType.FILE, "README.md"))
+
+    rule = _rule(
+        applicability={},
+        evidence_requirements={
+            "evidence_type": "file",
+            "identifiers": ["README.md"],
+        },
+    )
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.PASS
+
+
+def test_ai_context_makes_rule_applicable_and_passes() -> None:
+    repo = EvidenceRepository()
+    repo.add(_evidence(EvidenceType.DEPENDENCY, "openai"))
+    repo.add(_evidence(EvidenceType.FILE, "README.md"))
+
+    rule = _rule(
+        applicability=AI_DEPENDENCY_APPLICABILITY,
+        evidence_requirements={
+            "evidence_type": "file",
+            "identifiers": ["README.md"],
+        },
+    )
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.PASS
+    assert result.matched_evidence
+
+
+def test_ai_context_rule_can_fail_when_requirements_missing() -> None:
+    repo = EvidenceRepository()
+    repo.add(_evidence(EvidenceType.DEPENDENCY, "openai"))
+
+    rule = _rule(
+        applicability=AI_DEPENDENCY_APPLICABILITY,
+        evidence_requirements={
+            "evidence_type": "file",
+            "identifiers": ["README.md"],
+        },
+    )
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.FAIL
+    assert result.missing_requirements
+
+
+def test_non_applicable_rule_returns_not_applicable() -> None:
+    repo = EvidenceRepository()
+    repo.add(_evidence(EvidenceType.FILE, "README.md"))
+
+    rule = _rule(
+        applicability=AI_DEPENDENCY_APPLICABILITY,
+        evidence_requirements={
+            "evidence_type": "file",
+            "identifiers": ["README.md"],
+        },
+    )
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.NOT_APPLICABLE
+    assert result.missing_requirements == []
+    assert result.message == "Rule is not applicable to this repository."
 
 
 def test_any_operator_succeeds_with_one_child() -> None:

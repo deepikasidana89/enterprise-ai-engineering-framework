@@ -19,6 +19,7 @@ class CategoryScoreDetail:
     total_rules: int
     passed_rules: int
     failed_rules: int
+    manual_review_rules: int
     not_applicable_rules: int
     disabled_rules: int
     error_rules: int
@@ -38,6 +39,7 @@ class ReadinessScore:
     error_rules: int
     critical_failures: int
     high_failures: int
+    manual_review_rules: int = 0
     summary: dict[str, object] = field(default_factory=dict)
     production_readiness: ProductionReadiness = ProductionReadiness.NOT_READY
     category_details: dict[str, CategoryScoreDetail] = field(default_factory=dict)

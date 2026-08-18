@@ -7,7 +7,19 @@ rules:
     version: "1.0"
     enabled: true
     applicability:
-      always: true
+      any:
+        - evidence_type: dependency
+          identifiers:
+            - openai
+            - anthropic
+            - langchain
+            - langgraph
+            - transformers
+            - llama-index
+            - litellm
+            - semantic-kernel
+            - google-generativeai
+            - azure-ai-inference
     rationale: Telemetry enables incident response and continuous tuning.
     recommendation: Add structured logs and telemetry for AI interactions.
     tags: [observability, logging]

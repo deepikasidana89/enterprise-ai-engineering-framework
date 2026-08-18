@@ -25,5 +25,6 @@ def test_not_ready_example_fails_readiness() -> None:
     analysis = EARFPipeline().analyze(_project_root() / "examples" / "not-ready-ai-project")
 
     assert analysis.readiness_score.production_readiness == ProductionReadiness.NOT_READY
-    assert analysis.readiness_score.failed_rules >= 5
+    assert analysis.readiness_score.failed_rules >= 2
+    assert analysis.readiness_score.not_applicable_rules >= 1
     assert analysis.readiness_score.critical_failures >= 1

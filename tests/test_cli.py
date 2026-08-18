@@ -391,7 +391,7 @@ def test_evaluate_command_show_evidence(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 0
-    assert "matched: README.md" in result.stdout
+    assert "matched: README.md (README.md)" in result.stdout
 
 
 def test_score_command_hundred_percent_repository(tmp_path: Path) -> None:

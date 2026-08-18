@@ -7,7 +7,19 @@ rules:
     version: "1.0"
     enabled: true
     applicability:
-      always: true
+      any:
+        - evidence_type: dependency
+          identifiers:
+            - openai
+            - anthropic
+            - langchain
+            - langgraph
+            - transformers
+            - llama-index
+            - litellm
+            - semantic-kernel
+            - google-generativeai
+            - azure-ai-inference
     rationale: Timeouts prevent hangs and preserve service stability.
     recommendation: Set timeout values for all model calls.
     tags: [reliability, timeout]
@@ -30,7 +42,19 @@ rules:
     version: "1.0"
     enabled: true
     applicability:
-      always: true
+      any:
+        - evidence_type: dependency
+          identifiers:
+            - openai
+            - anthropic
+            - langchain
+            - langgraph
+            - transformers
+            - llama-index
+            - litellm
+            - semantic-kernel
+            - google-generativeai
+            - azure-ai-inference
     rationale: Retries and fallback reduce transient failure impact.
     recommendation: Implement bounded retries or alternate provider fallback.
     tags: [reliability, retry, fallback]

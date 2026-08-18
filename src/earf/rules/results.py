@@ -9,6 +9,7 @@ from ..models import Evidence, Metadata
 class RuleStatus(Enum):
     PASS = "pass"
     FAIL = "fail"
+    MANUAL_REVIEW = "manual_review"
     NOT_APPLICABLE = "not_applicable"
     DISABLED = "disabled"
     ERROR = "error"

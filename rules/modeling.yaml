@@ -7,7 +7,19 @@ rules:
     version: "1.0"
     enabled: true
     applicability:
-      always: true
+      any:
+        - evidence_type: dependency
+          identifiers:
+            - openai
+            - anthropic
+            - langchain
+            - langgraph
+            - transformers
+            - llama-index
+            - litellm
+            - semantic-kernel
+            - google-generativeai
+            - azure-ai-inference
     rationale: Explicit provider configuration improves reproducibility.
     recommendation: Add explicit model/provider configuration settings.
     tags: [model, configuration]
@@ -42,7 +54,19 @@ rules:
     version: "1.0"
     enabled: true
     applicability:
-      always: true
+      any:
+        - evidence_type: dependency
+          identifiers:
+            - openai
+            - anthropic
+            - langchain
+            - langgraph
+            - transformers
+            - llama-index
+            - litellm
+            - semantic-kernel
+            - google-generativeai
+            - azure-ai-inference
     rationale: Version visibility reduces drift and debugging effort.
     recommendation: Document model versions and update procedures.
     tags: [model, versioning]

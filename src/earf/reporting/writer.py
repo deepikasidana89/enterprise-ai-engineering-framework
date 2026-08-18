@@ -70,6 +70,7 @@ class ReportWriter:
                 "",
                 f"Passed: {report.readiness_score.passed_rules}",
                 f"Failed: {report.readiness_score.failed_rules}",
+                f"Manual Review: {report.readiness_score.manual_review_rules}",
                 f"Not Applicable: {report.readiness_score.not_applicable_rules}",
                 f"Disabled: {report.readiness_score.disabled_rules}",
                 f"Errors: {report.readiness_score.error_rules}",
@@ -164,6 +165,7 @@ class ReportWriter:
                 "| --- | ---: |",
                 f"| Passed | {report.readiness_score.passed_rules} |",
                 f"| Failed | {report.readiness_score.failed_rules} |",
+                f"| Manual Review | {report.readiness_score.manual_review_rules} |",
                 f"| Not Applicable | {report.readiness_score.not_applicable_rules} |",
                 f"| Disabled | {report.readiness_score.disabled_rules} |",
                 f"| Errors | {report.readiness_score.error_rules} |",
@@ -258,6 +260,7 @@ class ReportWriter:
             "summary": {
                 "passed": report.readiness_score.passed_rules,
                 "failed": report.readiness_score.failed_rules,
+                "manual_review": report.readiness_score.manual_review_rules,
                 "not_applicable": report.readiness_score.not_applicable_rules,
                 "disabled": report.readiness_score.disabled_rules,
                 "errors": report.readiness_score.error_rules,

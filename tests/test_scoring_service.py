@@ -244,3 +244,23 @@ def test_custom_severity_weights_are_used() -> None:
     score = service.score(results, catalog)
 
     assert score.overall_score == 66.7
+
+
+def test_manual_review_counts_and_scores_as_conservative_failure() -> None:
+    catalog = RuleCatalog(
+        [
+            _rule("SEC-001", category="security", severity=Severity.CRITICAL),
+            _rule("GOV-001", category="governance", severity=Severity.HIGH),
+        ]
+    )
+    results = [
+        _result("SEC-001", RuleStatus.MANUAL_REVIEW),
+        _result("GOV-001", RuleStatus.PASS),
+    ]
+
+    score = ScoringService().score(results, catalog)
+
+    assert score.manual_review_rules == 1
+    assert score.failed_rules == 1
+    assert score.critical_failures == 1
+    assert score.overall_score == 41.2

@@ -16,6 +16,7 @@ class _CategoryAccumulator:
     total_rules: int = 0
     passed_rules: int = 0
     failed_rules: int = 0
+    manual_review_rules: int = 0
     not_applicable_rules: int = 0
     disabled_rules: int = 0
     error_rules: int = 0
@@ -46,6 +47,7 @@ class ScoringService:
         total_rules = 0
         passed_rules = 0
         failed_rules = 0
+        manual_review_rules = 0
         not_applicable_rules = 0
         disabled_rules = 0
         error_rules = 0
@@ -80,6 +82,19 @@ class ScoringService:
                 category_state.possible_weight += weight
             elif status == RuleStatus.FAIL:
                 failed_rules += 1
+                category_state.failed_rules += 1
+                possible_weight += weight
+                category_state.possible_weight += weight
+                if rule.severity == Severity.CRITICAL:
+                    critical_failures += 1
+                    category_state.critical_failures += 1
+                if rule.severity == Severity.HIGH:
+                    high_failures += 1
+                    category_state.high_failures += 1
+            elif status == RuleStatus.MANUAL_REVIEW:
+                manual_review_rules += 1
+                failed_rules += 1
+                category_state.manual_review_rules += 1
                 category_state.failed_rules += 1
                 possible_weight += weight
                 category_state.possible_weight += weight
@@ -124,6 +139,7 @@ class ScoringService:
             "category_ranking": self._category_ranking(category_details),
             "critical_failures": critical_failures,
             "high_failures": high_failures,
+            "manual_review_rules": manual_review_rules,
             "unknown_result_count": unknown_result_count,
         }
 
@@ -133,6 +149,7 @@ class ScoringService:
             total_rules=total_rules,
             passed_rules=passed_rules,
             failed_rules=failed_rules,
+            manual_review_rules=manual_review_rules,
             not_applicable_rules=not_applicable_rules,
             disabled_rules=disabled_rules,
             error_rules=error_rules,
@@ -157,6 +174,7 @@ class ScoringService:
                 total_rules=state.total_rules,
                 passed_rules=state.passed_rules,
                 failed_rules=state.failed_rules,
+                manual_review_rules=state.manual_review_rules,
                 not_applicable_rules=state.not_applicable_rules,
                 disabled_rules=state.disabled_rules,
                 error_rules=state.error_rules,

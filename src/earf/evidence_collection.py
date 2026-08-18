@@ -6,6 +6,7 @@ from .collectors.base import EvidenceCollector
 from .collectors.config_collector import ConfigCollector
 from .collectors.dependency_collector import DependencyCollector
 from .collectors.file_collector import FileCollector
+from .collectors.secret_management_collector import SecretManagementCollector
 from .collectors.workflow_collector import WorkflowCollector
 from .evidence import EvidenceRepository
 from .models import Evidence, RepositoryContext
@@ -18,6 +19,7 @@ class EvidenceCollectionService:
             DependencyCollector(),
             WorkflowCollector(),
             ConfigCollector(),
+            SecretManagementCollector(),
         ]
 
     def collect(

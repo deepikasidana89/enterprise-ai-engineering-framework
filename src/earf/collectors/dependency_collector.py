@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import re
+import json
 from pathlib import Path
 import tomllib
+import xml.etree.ElementTree as ET
 
 from .base import EvidenceCollector
 from ..models import Evidence, EvidenceType, RepositoryContext
@@ -39,6 +41,8 @@ class DependencyCollector(EvidenceCollector):
 
         evidence.extend(self._collect_requirements(root))
         evidence.extend(self._collect_pyproject(root))
+        evidence.extend(self._collect_package_json(root))
+        evidence.extend(self._collect_pom_xml(root))
 
         return sorted(evidence, key=lambda item: (item.identifier, item.path or ""))
 
@@ -115,6 +119,81 @@ class DependencyCollector(EvidenceCollector):
                 )
             )
         return items
+
+    def _collect_package_json(self, root: Path) -> list[Evidence]:
+        package_file = root / "package.json"
+        if not package_file.is_file():
+            return []
+
+        try:
+            content = json.loads(package_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return []
+
+        dependency_sections = (
+            "dependencies",
+            "optionalDependencies",
+            "peerDependencies",
+        )
+        collected: set[str] = set()
+        for section in dependency_sections:
+            values = content.get(section)
+            if not isinstance(values, dict):
+                continue
+            for name in values.keys():
+                if isinstance(name, str) and name.strip():
+                    collected.add(name.strip().lower())
+
+        rel_path = str(package_file.relative_to(root))
+        return [
+            Evidence(
+                evidence_type=EvidenceType.DEPENDENCY,
+                source=self.name,
+                description=f"Dependency declared in {rel_path}",
+                identifier=identifier,
+                path=rel_path,
+                location=rel_path,
+                metadata={"collector": self.name, "origin": "package.json"},
+            )
+            for identifier in sorted(collected)
+        ]
+
+    def _collect_pom_xml(self, root: Path) -> list[Evidence]:
+        pom_file = root / "pom.xml"
+        if not pom_file.is_file():
+            return []
+
+        try:
+            xml_root = ET.fromstring(pom_file.read_text(encoding="utf-8"))
+        except (ET.ParseError, OSError):
+            return []
+
+        rel_path = str(pom_file.relative_to(root))
+        dependencies: set[str] = set()
+
+        for dep in xml_root.findall(".//{*}dependency"):
+            group_id = dep.findtext("{*}groupId")
+            artifact_id = dep.findtext("{*}artifactId")
+
+            if artifact_id and artifact_id.strip():
+                artifact_token = artifact_id.strip().lower()
+                dependencies.add(artifact_token)
+                if group_id and group_id.strip():
+                    group_token = group_id.strip().lower()
+                    dependencies.add(f"{group_token}:{artifact_token}")
+
+        return [
+            Evidence(
+                evidence_type=EvidenceType.DEPENDENCY,
+                source=self.name,
+                description=f"Dependency declared in {rel_path}",
+                identifier=identifier,
+                path=rel_path,
+                location=rel_path,
+                metadata={"collector": self.name, "origin": "pom.xml"},
+            )
+            for identifier in sorted(dependencies)
+        ]
 
 
 # Backward-compatible alias for existing imports.

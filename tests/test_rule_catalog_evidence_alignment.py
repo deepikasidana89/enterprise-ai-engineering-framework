@@ -67,6 +67,7 @@ def test_populated_repository_satisfies_all_rules(tmp_path: Path) -> None:
     (tmp_path / "README.md").write_text("# AI system purpose", encoding="utf-8")
     (tmp_path / "CODEOWNERS").write_text("* @team", encoding="utf-8")
     (tmp_path / "SECURITY.md").write_text("Security policy", encoding="utf-8")
+    (tmp_path / ".env.example").write_text("API_KEY=", encoding="utf-8")
 
     (tmp_path / "requirements.txt").write_text(
         "\n".join(
@@ -113,4 +114,5 @@ def test_repository_without_required_artifacts_fails_all_rules(tmp_path: Path) -
     statuses = _evaluate_rules(tmp_path)
 
     assert len(statuses) == 12
-    assert all(status == RuleStatus.FAIL for status in statuses.values())
+    assert all(status in {RuleStatus.FAIL, RuleStatus.NOT_APPLICABLE} for status in statuses.values())
+    assert any(status == RuleStatus.NOT_APPLICABLE for status in statuses.values())

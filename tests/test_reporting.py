@@ -177,6 +177,59 @@ def test_recommendations_come_from_failed_rules_and_are_deduplicated() -> None:
     ]
 
 
+def test_not_applicable_rules_do_not_appear_in_findings_or_recommendations() -> None:
+    catalog = RuleCatalog(
+        [
+            _rule(
+                "GOV-001",
+                title="AI ownership documented",
+                category="governance",
+                severity=Severity.HIGH,
+                recommendation="Document ownership.",
+            ),
+            _rule(
+                "MOD-001",
+                title="Model provider configured",
+                category="modeling",
+                severity=Severity.HIGH,
+                recommendation="Add provider configuration.",
+            ),
+        ]
+    )
+    results = [
+        _result("GOV-001", RuleStatus.FAIL),
+        RuleResult(rule_id="MOD-001", status=RuleStatus.NOT_APPLICABLE, message="Rule is not applicable to this repository."),
+    ]
+    analysis = AnalysisResult(
+        repository_context=RepositoryContext(root_path=Path("."), project_name="sample-repo"),
+        evidence_repository=EvidenceRepository(),
+        rule_catalog=catalog,
+        rule_results=results,
+        readiness_score=ReadinessScore(
+            overall_score=100.0,
+            category_scores={"governance": 100.0},
+            total_rules=2,
+            passed_rules=0,
+            failed_rules=1,
+            not_applicable_rules=1,
+            disabled_rules=0,
+            error_rules=0,
+            critical_failures=0,
+            high_failures=1,
+            summary={},
+            production_readiness=ProductionReadiness.NOT_READY,
+            category_details={},
+        ),
+    )
+
+    report = ReportBuilder().build(analysis, generated_at=TIMESTAMP)
+
+    assert [item["rule_id"] for item in report.metadata["critical_findings"]] == []
+    assert [item["rule_id"] for item in report.metadata["high_findings"]] == ["GOV-001"]
+    assert [item["rule_id"] for item in report.metadata["recommendations"]] == ["GOV-001"]
+    assert any(row["status"] == "NOT_APPLICABLE" for row in report.metadata["rule_details"])
+
+
 def test_console_rendering() -> None:
     output = ReportWriter().render_console(_report())
 

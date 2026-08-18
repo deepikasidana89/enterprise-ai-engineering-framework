@@ -111,12 +111,21 @@ def evaluate(
             title_text = title.title if title is not None else ""
             typer.echo(f"{result.rule_id:<8} {result.status.name:<15} {title_text}")
             if show_evidence and result.matched_evidence:
-                matched_ids = ", ".join(e.identifier for e in result.matched_evidence)
+                rendered: list[str] = []
+                for item in result.matched_evidence:
+                    if item.location:
+                        rendered.append(f"{item.identifier} ({item.location})")
+                    elif item.path:
+                        rendered.append(f"{item.identifier} ({item.path})")
+                    else:
+                        rendered.append(item.identifier)
+                matched_ids = ", ".join(rendered)
                 typer.echo(f"  matched: {matched_ids}")
 
         summary = {
             RuleStatus.PASS: 0,
             RuleStatus.FAIL: 0,
+            RuleStatus.MANUAL_REVIEW: 0,
             RuleStatus.NOT_APPLICABLE: 0,
             RuleStatus.DISABLED: 0,
             RuleStatus.ERROR: 0,
@@ -129,6 +138,7 @@ def evaluate(
         typer.echo("")
         typer.echo(f"Passed: {summary[RuleStatus.PASS]}")
         typer.echo(f"Failed: {summary[RuleStatus.FAIL]}")
+        typer.echo(f"Manual Review: {summary[RuleStatus.MANUAL_REVIEW]}")
         typer.echo(f"Not Applicable: {summary[RuleStatus.NOT_APPLICABLE]}")
         typer.echo(f"Disabled: {summary[RuleStatus.DISABLED]}")
         typer.echo(f"Errors: {summary[RuleStatus.ERROR]}")
