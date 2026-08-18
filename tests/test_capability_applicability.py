@@ -135,6 +135,96 @@ def test_readme_keyword_does_not_trigger_rag(tmp_path: Path) -> None:
     assert detection.detected is False
 
 
+def test_readme_keyword_does_not_trigger_api_or_agents(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text(
+        "This service exposes an API and uses agent orchestration.",
+        encoding="utf-8",
+    )
+    repo = _collect(tmp_path)
+
+    api_detection = RepositoryCapabilityDetector(repo).detect("has_api")
+    agent_detection = RepositoryCapabilityDetector(repo).detect("uses_agents")
+
+    assert api_detection.detected is False
+    assert agent_detection.detected is False
+
+
+def test_has_api_detected_from_code_pattern_without_dependency(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text(
+        "from fastapi import FastAPI\n"
+        "app = FastAPI()\n"
+        "@app.get('/health')\n"
+        "def health():\n"
+        "    return {'ok': True}\n",
+        encoding="utf-8",
+    )
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("has_api")
+
+    assert detection.detected is True
+    assert any(item.evidence_type.name == "CODE_PATTERN" for item in detection.evidence)
+
+
+def test_uses_agents_detected_from_code_pattern_without_dependency(tmp_path: Path) -> None:
+    (tmp_path / "agent_flow.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "graph = StateGraph(dict)\n",
+        encoding="utf-8",
+    )
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_agents")
+
+    assert detection.detected is True
+    assert any(item.identifier == "langgraph_state_graph" for item in detection.evidence)
+
+
+def test_generic_agent_service_name_does_not_trigger_uses_agents(tmp_path: Path) -> None:
+    (tmp_path / "agent_service.py").write_text(
+        "class AgentService:\n"
+        "    pass\n",
+        encoding="utf-8",
+    )
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_agents")
+
+    assert detection.detected is False
+
+
+def test_uses_rag_detected_from_code_pattern_combination(tmp_path: Path) -> None:
+    (tmp_path / "rag_pipeline.py").write_text(
+        "result = client.embeddings.create(input='q', model='text-embedding-3-small')\n"
+        "hits = collection.query(query_embeddings=[result], n_results=5)\n"
+        "retriever = vectorstore.as_retriever()\n"
+        "chain = create_retrieval_chain(retriever, combine_docs_chain)\n",
+        encoding="utf-8",
+    )
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_rag")
+
+    assert detection.detected is True
+    identifiers = {item.identifier for item in detection.evidence}
+    assert "rag_embedding_api_call" in identifiers
+    assert "rag_vector_query_call" in identifiers
+    assert "rag_retriever_chain" in identifiers
+
+
+def test_uses_rag_needs_full_pattern_combination(tmp_path: Path) -> None:
+    (tmp_path / "rag_partial.py").write_text(
+        "result = client.embeddings.create(input='q', model='text-embedding-3-small')\n"
+        "hits = collection.query(query_embeddings=[result], n_results=5)\n",
+        encoding="utf-8",
+    )
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_rag")
+
+    assert detection.detected is False
+
+
 def test_not_applicable_rules_not_in_score_denominator() -> None:
     rules = RuleCatalog(
         [
@@ -188,3 +278,20 @@ def test_capability_provenance_for_agents(tmp_path: Path) -> None:
 
     assert detection.detected is True
     assert any(item.identifier == "langgraph" for item in detection.evidence)
+
+
+def test_capability_provenance_includes_dependency_and_code_pattern(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text("langgraph>=0.2.0\n", encoding="utf-8")
+    (tmp_path / "agent_flow.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "graph = StateGraph(dict)\n",
+        encoding="utf-8",
+    )
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_agents")
+
+    assert detection.detected is True
+    identifiers = {item.identifier for item in detection.evidence}
+    assert "langgraph" in identifiers
+    assert "langgraph_state_graph" in identifiers

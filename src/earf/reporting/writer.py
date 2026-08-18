@@ -22,18 +22,6 @@ class ReportWriter:
             report.readiness_score.category_scores.items(),
             key=lambda item: item[0].lower(),
         )
-        critical_findings = cast(
-            list[dict[str, object]],
-            report.metadata.get("critical_findings", []),
-        )
-        high_findings = cast(
-            list[dict[str, object]],
-            report.metadata.get("high_findings", []),
-        )
-        recommendations = cast(
-            list[dict[str, str]],
-            report.metadata.get("recommendations", []),
-        )
         rule_details = cast(
             list[dict[str, object]],
             report.metadata.get("rule_details", []),
@@ -41,13 +29,34 @@ class ReportWriter:
         not_applicable_rows = [
             row for row in rule_details if str(row.get("status", "")) == "NOT_APPLICABLE"
         ]
+        passed_controls = cast(
+            list[dict[str, object]],
+            report.metadata.get("passed_controls", []),
+        )
         core_detail = report.readiness_score.tier_details.get("core")
         advanced_detail = report.readiness_score.tier_details.get("advanced")
         coverage = report.readiness_score.assessment_coverage
-        core_gaps = cast(list[dict[str, object]], report.metadata.get("core_gaps", []))
+        core_gaps = cast(
+            list[dict[str, object]],
+            report.metadata.get("core_gaps", []),
+        )
         advanced_opportunities = cast(
             list[dict[str, object]],
             report.metadata.get("advanced_opportunities", []),
+        )
+        critical_blockers = [
+            item for item in core_gaps if str(item.get("severity", "")).upper() == "CRITICAL"
+        ]
+        top_core_gaps = [
+            item for item in core_gaps if str(item.get("severity", "")).upper() != "CRITICAL"
+        ]
+        high_priority_core_gap_count = sum(
+            1 for item in top_core_gaps if str(item.get("severity", "")).upper() == "HIGH"
+        )
+        core_applicable_controls = (
+            (core_detail.passed_rules + core_detail.failed_rules + core_detail.error_rules)
+            if core_detail is not None
+            else 0
         )
 
         category_width = max(
@@ -65,36 +74,20 @@ class ReportWriter:
             "",
             f"Core Readiness: {report.readiness_score.core_readiness_score:.1f} / 100",
             f"Advanced Controls: {report.readiness_score.advanced_controls_score:.1f} / 100",
-            (
-                "Assessment Coverage: "
-                f"{coverage.percentage:.1f}% ({coverage.evaluated}/{coverage.applicable})"
-            ),
-            f"Overall Readiness: {report.readiness_score.overall_score:.1f} / 100",
-            f"Overall Score: {report.readiness_score.overall_score:.1f} / 100",
+            f"Assessment Coverage: {coverage.percentage:.1f}%",
             "",
             "Production Status",
             "",
             report.readiness_score.production_readiness.value,
             "",
-            "Core Controls",
+            "Why?",
             "",
-            f"Passed: {core_detail.passed_rules if core_detail else 0}",
-            f"Failed: {core_detail.failed_rules if core_detail else 0}",
-            f"Manual Review: {core_detail.manual_review_rules if core_detail else 0}",
-            f"Not Applicable: {core_detail.not_applicable_rules if core_detail else 0}",
-            f"Disabled: {core_detail.disabled_rules if core_detail else 0}",
-            f"Errors: {core_detail.error_rules if core_detail else 0}",
-            "",
-            "Advanced Controls",
-            "",
-            f"Passed: {advanced_detail.passed_rules if advanced_detail else 0}",
+            f"{len(critical_blockers)} critical blockers",
+            f"{high_priority_core_gap_count} high-priority core gaps",
             (
-                "Improvement Opportunities: "
-                f"{advanced_detail.failed_rules if advanced_detail else 0}"
+                f"{core_detail.passed_rules if core_detail else 0} of "
+                f"{core_applicable_controls} applicable core controls passed"
             ),
-            f"Not Applicable: {advanced_detail.not_applicable_rules if advanced_detail else 0}",
-            f"Disabled: {advanced_detail.disabled_rules if advanced_detail else 0}",
-            f"Errors: {advanced_detail.error_rules if advanced_detail else 0}",
             "",
             "Category Scores",
             "",
@@ -105,48 +98,16 @@ class ReportWriter:
                 f"{_title_case_category(category):<{category_width}}  {score:>5.1f}"
             )
 
-        lines.extend(
-            [
-                "",
-                "Summary",
-                "",
-                f"Passed: {report.readiness_score.passed_rules}",
-                f"Failed: {report.readiness_score.failed_rules}",
-                f"Manual Review: {report.readiness_score.manual_review_rules}",
-                f"Not Applicable: {report.readiness_score.not_applicable_rules}",
-                f"Disabled: {report.readiness_score.disabled_rules}",
-                f"Errors: {report.readiness_score.error_rules}",
-                f"Critical Failures: {report.readiness_score.critical_failures}",
-                f"High Failures: {report.readiness_score.high_failures}",
-                "",
-                "Critical Findings",
-                "",
-            ]
-        )
-
-        if critical_findings:
-            for finding in critical_findings:
+        lines.extend(["", "Critical Blockers", ""])
+        if critical_blockers:
+            for finding in critical_blockers:
                 self._append_console_finding(lines, finding)
-        else:
-            lines.append("None")
-
-        lines.extend(["", "High Findings", ""])
-        if high_findings:
-            for finding in high_findings:
-                self._append_console_finding(lines, finding)
-        else:
-            lines.append("None")
-
-        lines.extend(["", "Recommendations", ""])
-        if recommendations:
-            for item in recommendations:
-                lines.append(f"{item['rule_id']}  {item['recommendation']}")
         else:
             lines.append("None")
 
         lines.extend(["", "Top Core Gaps", ""])
-        if core_gaps:
-            for finding in core_gaps:
+        if top_core_gaps:
+            for finding in top_core_gaps:
                 self._append_console_finding(lines, finding)
         else:
             lines.append("None")
@@ -155,6 +116,15 @@ class ReportWriter:
         if advanced_opportunities:
             for finding in advanced_opportunities:
                 self._append_console_finding(lines, finding, action_label="Opportunity")
+        else:
+            lines.append("None")
+
+        lines.extend(["", "Passed Controls", ""])
+        if passed_controls:
+            for item in passed_controls:
+                rule_id = str(item.get("rule_id", ""))
+                title = str(item.get("title", ""))
+                lines.append(f"PASS {rule_id} - {title}")
         else:
             lines.append("None")
 
@@ -170,6 +140,23 @@ class ReportWriter:
         else:
             lines.append("None")
 
+        lines.extend(
+            [
+                "",
+                "Summary",
+                "",
+                (
+                    f"Core: {core_detail.passed_rules if core_detail else 0} passed / "
+                    f"{core_detail.failed_rules if core_detail else 0} failed"
+                ),
+                (
+                    f"Advanced: {advanced_detail.passed_rules if advanced_detail else 0} passed / "
+                    f"{advanced_detail.failed_rules if advanced_detail else 0} opportunities"
+                ),
+                f"N/A: {report.readiness_score.not_applicable_rules}",
+            ]
+        )
+
         return "\n".join(lines)
 
     def render_json(self, report: ReadinessReport) -> str:
@@ -184,13 +171,14 @@ class ReportWriter:
             list[dict[str, object]],
             report.metadata.get("rule_details", []),
         )
-        critical_findings = cast(
+        core_gaps = cast(list[dict[str, object]], report.metadata.get("core_gaps", []))
+        advanced_opportunities = cast(
             list[dict[str, object]],
-            report.metadata.get("critical_findings", []),
+            report.metadata.get("advanced_opportunities", []),
         )
-        high_findings = cast(
+        passed_controls = cast(
             list[dict[str, object]],
-            report.metadata.get("high_findings", []),
+            report.metadata.get("passed_controls", []),
         )
         recommendations = cast(
             list[dict[str, str]],
@@ -199,6 +187,21 @@ class ReportWriter:
         not_applicable_rows = [
             row for row in rule_details if str(row.get("status", "")) == "NOT_APPLICABLE"
         ]
+        critical_blockers = [
+            item for item in core_gaps if str(item.get("severity", "")).upper() == "CRITICAL"
+        ]
+        top_core_gaps = [
+            item for item in core_gaps if str(item.get("severity", "")).upper() != "CRITICAL"
+        ]
+        high_priority_core_gap_count = sum(
+            1 for item in top_core_gaps if str(item.get("severity", "")).upper() == "HIGH"
+        )
+        core_detail = report.readiness_score.tier_details.get("core")
+        core_applicable_controls = (
+            (core_detail.passed_rules + core_detail.failed_rules + core_detail.error_rules)
+            if core_detail is not None
+            else 0
+        )
 
         lines = [
             "# EARF Enterprise AI Readiness Report",
@@ -225,6 +228,15 @@ class ReportWriter:
             "## Production Status",
             "",
             report.readiness_score.production_readiness.value,
+            "",
+            "## Why?",
+            "",
+            f"- {len(critical_blockers)} critical blockers",
+            f"- {high_priority_core_gap_count} high-priority core gaps",
+            (
+                f"- {core_detail.passed_rules if core_detail else 0} of "
+                f"{core_applicable_controls} applicable core controls passed"
+            ),
             "",
             "## Core Controls",
             "",
@@ -276,24 +288,8 @@ class ReportWriter:
                 f"| Errors | {report.readiness_score.error_rules} |",
                 f"| Critical Failures | {report.readiness_score.critical_failures} |",
                 f"| High Failures | {report.readiness_score.high_failures} |",
-                "",
-                "## Critical Findings",
-                "",
             ]
         )
-
-        if critical_findings:
-            for finding in critical_findings:
-                self._append_markdown_finding(lines, finding)
-        else:
-            lines.append("- None")
-
-        lines.extend(["", "## High Findings", ""])
-        if high_findings:
-            for finding in high_findings:
-                self._append_markdown_finding(lines, finding)
-        else:
-            lines.append("- None")
 
         lines.extend(
             [
@@ -324,22 +320,33 @@ class ReportWriter:
         else:
             lines.append("- None")
 
-        core_gaps = cast(list[dict[str, object]], report.metadata.get("core_gaps", []))
-        lines.extend(["", "## Top Core Gaps", ""])
-        if core_gaps:
-            for finding in core_gaps:
+        lines.extend(["", "## Critical Blockers", ""])
+        if critical_blockers:
+            for finding in critical_blockers:
                 self._append_markdown_finding(lines, finding)
         else:
             lines.append("- None")
 
-        advanced_opportunities = cast(
-            list[dict[str, object]],
-            report.metadata.get("advanced_opportunities", []),
-        )
+        lines.extend(["", "## Top Core Gaps", ""])
+        if top_core_gaps:
+            for finding in top_core_gaps:
+                self._append_markdown_finding(lines, finding)
+        else:
+            lines.append("- None")
+
         lines.extend(["", "## Advanced Opportunities", ""])
         if advanced_opportunities:
             for finding in advanced_opportunities:
                 self._append_markdown_finding(lines, finding, action_label="Opportunity")
+        else:
+            lines.append("- None")
+
+        lines.extend(["", "## Passed Controls", ""])
+        if passed_controls:
+            for item in passed_controls:
+                rule_id = str(item.get("rule_id", ""))
+                title = str(item.get("title", ""))
+                lines.append(f"- PASS {rule_id}: {title}")
         else:
             lines.append("- None")
 

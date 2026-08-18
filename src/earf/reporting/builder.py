@@ -35,6 +35,7 @@ class ReportBuilder:
         seen_recommendations: set[str] = set()
         core_gaps: list[dict[str, object]] = []
         advanced_opportunities: list[dict[str, object]] = []
+        passed_controls: list[dict[str, object]] = []
 
         for result in ordered_results:
             rule = rule_lookup.get(result.rule_id)
@@ -60,6 +61,17 @@ class ReportBuilder:
                     "missing_requirements": list(result.missing_requirements),
                 }
             )
+
+            if result.status == RuleStatus.PASS and rule is not None:
+                passed_controls.append(
+                    {
+                        "rule_id": rule.id,
+                        "title": rule.title,
+                        "severity": rule.severity.name,
+                        "tier": rule.tier.value,
+                        "message": result.message,
+                    }
+                )
 
             if result.status not in {RuleStatus.FAIL, RuleStatus.MANUAL_REVIEW} or rule is None:
                 continue
@@ -108,6 +120,7 @@ class ReportBuilder:
                 "recommendations": recommendations,
                     "core_gaps": core_gaps,
                     "advanced_opportunities": advanced_opportunities,
+                    "passed_controls": passed_controls,
             },
             analysis_result=analysis_result,
         )

@@ -457,13 +457,16 @@ def test_report_command_console_output(tmp_path: Path, monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "EARF Enterprise AI Readiness Report" in result.stdout
-    assert "Overall Readiness" in result.stdout
+    assert "Overall Assessment" in result.stdout
+    assert "Core Readiness:" in result.stdout
+    assert "Assessment Coverage:" in result.stdout
     assert "Production Status" in result.stdout
-    assert "Critical Findings" in result.stdout
+    assert "Why?" in result.stdout
+    assert "Critical Blockers" in result.stdout
     assert "SAF-001" in result.stdout
-    assert "High Findings" in result.stdout
-    assert "REL-001" in result.stdout
-    assert "Recommendations" in result.stdout
+    assert "Top Core Gaps" in result.stdout
+    assert "Advanced Opportunities" in result.stdout
+    assert "Passed Controls" in result.stdout
 
 
 def test_report_command_json_writes_file(tmp_path: Path, monkeypatch) -> None:

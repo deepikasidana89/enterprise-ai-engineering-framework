@@ -1,8 +1,8 @@
 # Rules
 
-EARF Phase 2 stores declarative rule definitions as YAML files in this directory.
+EARF stores declarative rule definitions as YAML files in this directory.
 
-Rules are definitions only. They are not executed against repository evidence in Phase 2.
+These rules are loaded and executed by the EARF evaluation pipeline against collected deterministic evidence.
 
 ## Schema
 
@@ -30,7 +30,7 @@ rules:
 		metadata: {}
 ```
 
-Supported deterministic evidence types in Phase 4:
+Supported deterministic evidence types:
 
 - `file`
 - `dependency`

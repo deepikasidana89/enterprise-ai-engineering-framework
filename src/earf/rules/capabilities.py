@@ -73,6 +73,33 @@ class RepositoryCapabilityDetector:
         "gin",
     }
 
+    _API_CODE_PATTERNS = {
+        "spring_rest_controller",
+        "spring_request_mapping",
+        "fastapi_app_init",
+        "fastapi_route_decorator",
+        "flask_route_decorator",
+        "express_app_init",
+        "express_router_method",
+    }
+
+    _AGENT_CODE_PATTERNS = {
+        "langgraph_state_graph",
+        "langchain_agent_executor",
+        "crewai_agent_construct",
+        "autogen_agent_construct",
+    }
+
+    _RAG_EMBEDDING_CODE_PATTERNS = {
+        "rag_embedding_api_call",
+    }
+    _RAG_VECTOR_CODE_PATTERNS = {
+        "rag_vector_query_call",
+    }
+    _RAG_RETRIEVER_CODE_PATTERNS = {
+        "rag_retriever_chain",
+    }
+
     def __init__(self, evidence_repository: EvidenceRepository) -> None:
         self._repository = evidence_repository
         self._cache: dict[str, CapabilityDetection] = {}
@@ -95,10 +122,18 @@ class RepositoryCapabilityDetector:
             return self._detect_dependency_capability(capability, self._LLM_DEPENDENCIES)
 
         if capability == "uses_agents":
-            return self._detect_dependency_capability(capability, self._AGENT_DEPENDENCIES)
+            return self._detect_dependency_or_code_pattern_capability(
+                capability,
+                dependency_identifiers=self._AGENT_DEPENDENCIES,
+                code_pattern_identifiers=self._AGENT_CODE_PATTERNS,
+            )
 
         if capability == "has_api":
-            return self._detect_dependency_capability(capability, self._API_DEPENDENCIES)
+            return self._detect_dependency_or_code_pattern_capability(
+                capability,
+                dependency_identifiers=self._API_DEPENDENCIES,
+                code_pattern_identifiers=self._API_CODE_PATTERNS,
+            )
 
         if capability == "has_cicd":
             workflows = self._repository.find(evidence_type=EvidenceType.WORKFLOW)
@@ -136,6 +171,22 @@ class RepositoryCapabilityDetector:
                     evidence=rag_framework_hits,
                 )
 
+            embedding_hits = self._code_pattern_matches(self._RAG_EMBEDDING_CODE_PATTERNS)
+            vector_pattern_hits = self._code_pattern_matches(self._RAG_VECTOR_CODE_PATTERNS)
+            retriever_hits = self._code_pattern_matches(self._RAG_RETRIEVER_CODE_PATTERNS)
+            if embedding_hits and vector_pattern_hits and retriever_hits:
+                return CapabilityDetection(
+                    name=capability,
+                    detected=True,
+                    reason=(
+                        "RAG capability evidence detected from embedding generation, "
+                        "vector query, and retriever-chain implementation patterns."
+                    ),
+                    evidence=self._dedupe(
+                        embedding_hits + vector_pattern_hits + retriever_hits
+                    ),
+                )
+
             return CapabilityDetection(
                 name=capability,
                 detected=False,
@@ -171,10 +222,40 @@ class RepositoryCapabilityDetector:
             evidence=[],
         )
 
+    def _detect_dependency_or_code_pattern_capability(
+        self,
+        capability: str,
+        *,
+        dependency_identifiers: set[str],
+        code_pattern_identifiers: set[str],
+    ) -> CapabilityDetection:
+        dependency_hits = self._dependency_matches(dependency_identifiers)
+        code_pattern_hits = self._code_pattern_matches(code_pattern_identifiers)
+        combined = self._dedupe(dependency_hits + code_pattern_hits)
+        if combined:
+            return CapabilityDetection(
+                name=capability,
+                detected=True,
+                reason=f"{capability} capability evidence detected.",
+                evidence=combined,
+            )
+
+        return CapabilityDetection(
+            name=capability,
+            detected=False,
+            reason=f"{capability} capability evidence was not detected.",
+            evidence=[],
+        )
+
     def _dependency_matches(self, expected_identifiers: set[str]) -> list[Evidence]:
         dependencies = self._repository.find(evidence_type=EvidenceType.DEPENDENCY)
         expected = {item.lower() for item in expected_identifiers}
         return [item for item in dependencies if item.identifier.lower() in expected]
+
+    def _code_pattern_matches(self, expected_identifiers: set[str]) -> list[Evidence]:
+        patterns = self._repository.find(evidence_type=EvidenceType.CODE_PATTERN)
+        expected = {item.lower() for item in expected_identifiers}
+        return [item for item in patterns if item.identifier.lower() in expected]
 
     def _dedupe(self, evidence: list[Evidence]) -> list[Evidence]:
         seen: set[tuple[str, str, str | None]] = set()

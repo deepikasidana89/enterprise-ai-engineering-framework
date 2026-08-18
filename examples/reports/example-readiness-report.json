@@ -1,8 +1,27 @@
 {
   "repository_name": "enterprise-ai-readiness-framework",
-  "generated_at": "2026-07-30T04:36:20Z",
+  "generated_at": "2026-08-18T05:41:45Z",
   "earf_version": "0.7.0",
-  "overall_score": 66.7,
+  "overall_score": 61.1,
+  "core_readiness": {
+    "score": 61.1,
+    "passed": 2,
+    "failed": 1,
+    "manual_review": 0,
+    "not_applicable": 8
+  },
+  "advanced_controls": {
+    "score": 0.0,
+    "passed": 0,
+    "failed": 0,
+    "manual_review": 0,
+    "improvement_opportunities": 0
+  },
+  "assessment_coverage": {
+    "percentage": 100.0,
+    "evaluated": 3,
+    "applicable": 3
+  },
   "production_status": "NOT_READY",
   "category_scores": {
     "evaluation": 0.0,
@@ -16,21 +35,25 @@
   "summary": {
     "passed": 2,
     "failed": 1,
+    "manual_review": 0,
     "not_applicable": 9,
     "disabled": 0,
     "errors": 0,
     "critical_failures": 0,
     "high_failures": 1
   },
-  "total_evidence": 16,
+  "total_evidence": 64,
   "rule_results": [
     {
       "rule_id": "EVA-001",
       "title": "AI behavior has automated evaluations",
       "category": "evaluation",
       "severity": "high",
+      "tier": "core",
       "status": "NOT_APPLICABLE",
       "message": "Rule is not applicable to this repository.",
+      "failure_message": "",
+      "applicability_reason": "uses_llm capability evidence was not detected.",
       "recommendation": "Add repeatable AI evaluation tests to CI workflows.",
       "error": null,
       "missing_requirements": []
@@ -40,8 +63,11 @@
       "title": "AI ownership documented",
       "category": "governance",
       "severity": "high",
+      "tier": "core",
       "status": "FAIL",
-      "message": "Missing required evidence.",
+      "message": "Required evidence for this control was not detected.",
+      "failure_message": "Required evidence for this control was not detected.",
+      "applicability_reason": "",
       "recommendation": "Document the owner and escalation path.",
       "error": null,
       "missing_requirements": [
@@ -53,8 +79,11 @@
       "title": "AI purpose documented",
       "category": "governance",
       "severity": "medium",
+      "tier": "core",
       "status": "PASS",
       "message": "Matched required evidence.",
+      "failure_message": "",
+      "applicability_reason": "",
       "recommendation": "Add documentation describing intended use and boundaries.",
       "error": null,
       "missing_requirements": []
@@ -64,8 +93,11 @@
       "title": "Model or provider configured",
       "category": "modeling",
       "severity": "high",
+      "tier": "core",
       "status": "NOT_APPLICABLE",
       "message": "Rule is not applicable to this repository.",
+      "failure_message": "",
+      "applicability_reason": "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']",
       "recommendation": "Add explicit model/provider configuration settings.",
       "error": null,
       "missing_requirements": []
@@ -75,8 +107,11 @@
       "title": "Model version documented",
       "category": "modeling",
       "severity": "medium",
+      "tier": "advanced",
       "status": "NOT_APPLICABLE",
       "message": "Rule is not applicable to this repository.",
+      "failure_message": "",
+      "applicability_reason": "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']",
       "recommendation": "Document model versions and update procedures.",
       "error": null,
       "missing_requirements": []
@@ -86,8 +121,11 @@
       "title": "AI interactions produce logs or telemetry",
       "category": "observability",
       "severity": "medium",
+      "tier": "core",
       "status": "NOT_APPLICABLE",
       "message": "Rule is not applicable to this repository.",
+      "failure_message": "",
+      "applicability_reason": "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']",
       "recommendation": "Add structured logs and telemetry for AI interactions.",
       "error": null,
       "missing_requirements": []
@@ -97,8 +135,11 @@
       "title": "Model calls define timeouts",
       "category": "reliability",
       "severity": "medium",
+      "tier": "core",
       "status": "NOT_APPLICABLE",
       "message": "Rule is not applicable to this repository.",
+      "failure_message": "",
+      "applicability_reason": "uses_llm capability evidence was not detected.",
       "recommendation": "Set timeout values for all model calls.",
       "error": null,
       "missing_requirements": []
@@ -108,8 +149,11 @@
       "title": "Model calls define retry or fallback",
       "category": "reliability",
       "severity": "medium",
+      "tier": "core",
       "status": "NOT_APPLICABLE",
       "message": "Rule is not applicable to this repository.",
+      "failure_message": "",
+      "applicability_reason": "uses_llm capability evidence was not detected.",
       "recommendation": "Implement bounded retries or alternate provider fallback.",
       "error": null,
       "missing_requirements": []
@@ -119,8 +163,11 @@
       "title": "Input validation present",
       "category": "safety",
       "severity": "high",
+      "tier": "core",
       "status": "NOT_APPLICABLE",
       "message": "Rule is not applicable to this repository.",
+      "failure_message": "",
+      "applicability_reason": "uses_llm capability evidence was not detected.",
       "recommendation": "Add validation and sanitization checks for AI inputs.",
       "error": null,
       "missing_requirements": []
@@ -130,20 +177,26 @@
       "title": "Output guardrails present",
       "category": "safety",
       "severity": "high",
+      "tier": "core",
       "status": "NOT_APPLICABLE",
       "message": "Rule is not applicable to this repository.",
+      "failure_message": "",
+      "applicability_reason": "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']",
       "recommendation": "Add post-processing or policy checks for model outputs.",
       "error": null,
       "missing_requirements": []
     },
     {
       "rule_id": "SEC-001",
-      "title": "Secrets are not hard-coded",
+      "title": "Externalized secret management evidence is present",
       "category": "security",
-      "severity": "critical",
+      "severity": "high",
+      "tier": "core",
       "status": "PASS",
-      "message": "Matched required evidence.",
-      "recommendation": "Move secrets to environment variables or secret managers.",
+      "message": "Externalized secret-management evidence detected.",
+      "failure_message": "",
+      "applicability_reason": "",
+      "recommendation": "Integrate a supported secret manager or documented internal secret-management abstraction with implementation evidence.",
       "error": null,
       "missing_requirements": []
     },
@@ -152,8 +205,11 @@
       "title": "Tool access uses least privilege",
       "category": "security",
       "severity": "high",
+      "tier": "core",
       "status": "NOT_APPLICABLE",
       "message": "Rule is not applicable to this repository.",
+      "failure_message": "",
+      "applicability_reason": "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']",
       "recommendation": "Restrict tool scopes and runtime permissions.",
       "error": null,
       "missing_requirements": []
@@ -163,7 +219,14 @@
   "high_findings": [
     {
       "rule_id": "GOV-001",
-      "title": "AI ownership documented"
+      "title": "AI ownership documented",
+      "severity": "HIGH",
+      "status": "FAIL",
+      "failure_message": "Required evidence for this control was not detected.",
+      "recommendation": "Document the owner and escalation path.",
+      "missing_requirements": [
+        "Missing requirement: evidence_type=file, identifiers=['CODEOWNERS']"
+      ]
     }
   ],
   "recommendations": [
@@ -180,8 +243,11 @@
         "title": "AI behavior has automated evaluations",
         "category": "evaluation",
         "severity": "high",
+        "tier": "core",
         "status": "NOT_APPLICABLE",
         "message": "Rule is not applicable to this repository.",
+        "failure_message": "",
+        "applicability_reason": "uses_llm capability evidence was not detected.",
         "recommendation": "Add repeatable AI evaluation tests to CI workflows.",
         "error": null,
         "missing_requirements": []
@@ -191,8 +257,11 @@
         "title": "AI ownership documented",
         "category": "governance",
         "severity": "high",
+        "tier": "core",
         "status": "FAIL",
-        "message": "Missing required evidence.",
+        "message": "Required evidence for this control was not detected.",
+        "failure_message": "Required evidence for this control was not detected.",
+        "applicability_reason": "",
         "recommendation": "Document the owner and escalation path.",
         "error": null,
         "missing_requirements": [
@@ -204,8 +273,11 @@
         "title": "AI purpose documented",
         "category": "governance",
         "severity": "medium",
+        "tier": "core",
         "status": "PASS",
         "message": "Matched required evidence.",
+        "failure_message": "",
+        "applicability_reason": "",
         "recommendation": "Add documentation describing intended use and boundaries.",
         "error": null,
         "missing_requirements": []
@@ -215,8 +287,11 @@
         "title": "Model or provider configured",
         "category": "modeling",
         "severity": "high",
+        "tier": "core",
         "status": "NOT_APPLICABLE",
         "message": "Rule is not applicable to this repository.",
+        "failure_message": "",
+        "applicability_reason": "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']",
         "recommendation": "Add explicit model/provider configuration settings.",
         "error": null,
         "missing_requirements": []
@@ -226,8 +301,11 @@
         "title": "Model version documented",
         "category": "modeling",
         "severity": "medium",
+        "tier": "advanced",
         "status": "NOT_APPLICABLE",
         "message": "Rule is not applicable to this repository.",
+        "failure_message": "",
+        "applicability_reason": "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']",
         "recommendation": "Document model versions and update procedures.",
         "error": null,
         "missing_requirements": []
@@ -237,8 +315,11 @@
         "title": "AI interactions produce logs or telemetry",
         "category": "observability",
         "severity": "medium",
+        "tier": "core",
         "status": "NOT_APPLICABLE",
         "message": "Rule is not applicable to this repository.",
+        "failure_message": "",
+        "applicability_reason": "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']",
         "recommendation": "Add structured logs and telemetry for AI interactions.",
         "error": null,
         "missing_requirements": []
@@ -248,8 +329,11 @@
         "title": "Model calls define timeouts",
         "category": "reliability",
         "severity": "medium",
+        "tier": "core",
         "status": "NOT_APPLICABLE",
         "message": "Rule is not applicable to this repository.",
+        "failure_message": "",
+        "applicability_reason": "uses_llm capability evidence was not detected.",
         "recommendation": "Set timeout values for all model calls.",
         "error": null,
         "missing_requirements": []
@@ -259,8 +343,11 @@
         "title": "Model calls define retry or fallback",
         "category": "reliability",
         "severity": "medium",
+        "tier": "core",
         "status": "NOT_APPLICABLE",
         "message": "Rule is not applicable to this repository.",
+        "failure_message": "",
+        "applicability_reason": "uses_llm capability evidence was not detected.",
         "recommendation": "Implement bounded retries or alternate provider fallback.",
         "error": null,
         "missing_requirements": []
@@ -270,8 +357,11 @@
         "title": "Input validation present",
         "category": "safety",
         "severity": "high",
+        "tier": "core",
         "status": "NOT_APPLICABLE",
         "message": "Rule is not applicable to this repository.",
+        "failure_message": "",
+        "applicability_reason": "uses_llm capability evidence was not detected.",
         "recommendation": "Add validation and sanitization checks for AI inputs.",
         "error": null,
         "missing_requirements": []
@@ -281,20 +371,26 @@
         "title": "Output guardrails present",
         "category": "safety",
         "severity": "high",
+        "tier": "core",
         "status": "NOT_APPLICABLE",
         "message": "Rule is not applicable to this repository.",
+        "failure_message": "",
+        "applicability_reason": "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']",
         "recommendation": "Add post-processing or policy checks for model outputs.",
         "error": null,
         "missing_requirements": []
       },
       {
         "rule_id": "SEC-001",
-        "title": "Secrets are not hard-coded",
+        "title": "Externalized secret management evidence is present",
         "category": "security",
-        "severity": "critical",
+        "severity": "high",
+        "tier": "core",
         "status": "PASS",
-        "message": "Matched required evidence.",
-        "recommendation": "Move secrets to environment variables or secret managers.",
+        "message": "Externalized secret-management evidence detected.",
+        "failure_message": "",
+        "applicability_reason": "",
+        "recommendation": "Integrate a supported secret manager or documented internal secret-management abstraction with implementation evidence.",
         "error": null,
         "missing_requirements": []
       },
@@ -303,8 +399,11 @@
         "title": "Tool access uses least privilege",
         "category": "security",
         "severity": "high",
+        "tier": "core",
         "status": "NOT_APPLICABLE",
         "message": "Rule is not applicable to this repository.",
+        "failure_message": "",
+        "applicability_reason": "Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']",
         "recommendation": "Restrict tool scopes and runtime permissions.",
         "error": null,
         "missing_requirements": []
@@ -314,7 +413,14 @@
     "high_findings": [
       {
         "rule_id": "GOV-001",
-        "title": "AI ownership documented"
+        "title": "AI ownership documented",
+        "severity": "HIGH",
+        "status": "FAIL",
+        "failure_message": "Required evidence for this control was not detected.",
+        "recommendation": "Document the owner and escalation path.",
+        "missing_requirements": [
+          "Missing requirement: evidence_type=file, identifiers=['CODEOWNERS']"
+        ]
       }
     ],
     "recommendations": [
@@ -322,6 +428,36 @@
         "rule_id": "GOV-001",
         "title": "AI ownership documented",
         "recommendation": "Document the owner and escalation path."
+      }
+    ],
+    "core_gaps": [
+      {
+        "rule_id": "GOV-001",
+        "title": "AI ownership documented",
+        "severity": "HIGH",
+        "status": "FAIL",
+        "failure_message": "Required evidence for this control was not detected.",
+        "recommendation": "Document the owner and escalation path.",
+        "missing_requirements": [
+          "Missing requirement: evidence_type=file, identifiers=['CODEOWNERS']"
+        ]
+      }
+    ],
+    "advanced_opportunities": [],
+    "passed_controls": [
+      {
+        "rule_id": "GOV-002",
+        "title": "AI purpose documented",
+        "severity": "MEDIUM",
+        "tier": "core",
+        "message": "Matched required evidence."
+      },
+      {
+        "rule_id": "SEC-001",
+        "title": "Externalized secret management evidence is present",
+        "severity": "HIGH",
+        "tier": "core",
+        "message": "Externalized secret-management evidence detected."
       }
     ]
   }

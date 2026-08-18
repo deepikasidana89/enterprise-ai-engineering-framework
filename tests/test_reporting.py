@@ -290,17 +290,24 @@ def test_console_rendering() -> None:
     assert "EARF Version:" in output
     assert "Overall Assessment" in output
     assert "Core Readiness: 100.0 / 100" in output
-    assert "Assessment Coverage: 100.0% (4/4)" in output
-    assert "Critical Findings" in output
+    assert "Assessment Coverage: 100.0%" in output
+    assert "Production Status" in output
+    assert "Why?" in output
+    assert "1 critical blockers" in output
+    assert "Critical Blockers" in output
+    assert "Top Core Gaps" in output
+    assert "Advanced Opportunities" in output
+    assert "Passed Controls" in output
+    assert "Summary" in output
+    assert "Critical Findings" not in output
+    assert "High Findings" not in output
+    assert "Recommendations" not in output
     assert "[CRITICAL] SEC-001 - Secrets are not hard-coded" in output
     assert "Reason:" in output
     assert "No supported evidence of externalized secret management was detected." in output
     assert "Action:" in output
-    assert "High Findings" in output
     assert "[HIGH] OBS-001 - Telemetry present" in output
-    assert "Recommendations" in output
-    assert "Top Core Gaps" in output
-    assert "Advanced Opportunities" in output
+    assert output.count("SEC-001") == 1
 
 
 def test_json_serialization_and_enum_values(tmp_path: Path) -> None:

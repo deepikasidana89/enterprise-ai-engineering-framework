@@ -3,7 +3,7 @@ rules:
     title: Externalized secret management evidence is present
     description: Repository contains evidence suggesting that credentials and secrets are managed outside application source code.
     category: security
-    severity: critical
+    severity: high
     tier: core
     version: "1.0"
     enabled: true

@@ -1,0 +1,91 @@
+EARF Enterprise AI Readiness Report
+
+Repository: enterprise-ai-readiness-framework
+Generated: 2026-08-18T05:41:53Z
+EARF Version: 0.7.0
+
+Overall Assessment
+
+Core Readiness: 61.1 / 100
+Advanced Controls: 0.0 / 100
+Assessment Coverage: 100.0%
+
+Production Status
+
+NOT_READY
+
+Why?
+
+0 critical blockers
+1 high-priority core gaps
+2 of 3 applicable core controls passed
+
+Category Scores
+
+Evaluation       0.0
+Governance      36.4
+Modeling         0.0
+Observability    0.0
+Reliability      0.0
+Safety           0.0
+Security       100.0
+
+Critical Blockers
+
+None
+
+Top Core Gaps
+
+[HIGH] GOV-001 - AI ownership documented
+Reason:
+Required evidence for this control was not detected.
+Action:
+Document the owner and escalation path.
+Missing:
+- Missing requirement: evidence_type=file, identifiers=['CODEOWNERS']
+
+
+Advanced Opportunities
+
+None
+
+Passed Controls
+
+PASS GOV-002 - AI purpose documented
+PASS SEC-001 - Externalized secret management evidence is present
+
+Not Applicable
+
+N/A EVA-001 - AI behavior has automated evaluations
+Reason: uses_llm capability evidence was not detected.
+
+N/A MOD-001 - Model or provider configured
+Reason: Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']
+
+N/A MOD-002 - Model version documented
+Reason: Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']
+
+N/A OBS-001 - AI interactions produce logs or telemetry
+Reason: Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']
+
+N/A REL-001 - Model calls define timeouts
+Reason: uses_llm capability evidence was not detected.
+
+N/A REL-002 - Model calls define retry or fallback
+Reason: uses_llm capability evidence was not detected.
+
+N/A SAF-001 - Input validation present
+Reason: uses_llm capability evidence was not detected.
+
+N/A SAF-002 - Output guardrails present
+Reason: Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']
+
+N/A SEC-002 - Tool access uses least privilege
+Reason: Missing requirement: evidence_type=dependency, identifiers=['anthropic', 'azure-ai-inference', 'google-generativeai', 'langchain', 'langgraph', 'litellm', 'llama-index', 'openai', 'semantic-kernel', 'transformers']
+
+
+Summary
+
+Core: 2 passed / 1 failed
+Advanced: 0 passed / 0 opportunities
+N/A: 9

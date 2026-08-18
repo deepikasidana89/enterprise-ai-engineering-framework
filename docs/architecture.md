@@ -1,4 +1,4 @@
-# Architecture (Phase 4)
+# Architecture
 
 ## Components
 
@@ -11,18 +11,18 @@
 - Evidence Collection Service: runs collectors, deduplicates exact duplicates, and stores evidence.
 - Rule Evaluator: evaluates one `RuleDefinition` deterministically against evidence requirements.
 - Rule Evaluation Service: evaluates all rules and produces ordered `RuleResult`s.
-- Scoring Engine: converts rule results into category and overall scores (placeholder).
-- Reporters: render `AssessmentReport` into different formats.
+- Scoring Engine: converts rule results into weighted scores, including core readiness, advanced controls, and assessment coverage.
+- Reporting: builds and renders deterministic console/JSON/Markdown readiness reports.
 
 Dependency direction is strictly top-down from CLI → Rule Loader/Rule Catalog and CLI → Repository Loader → Collectors → Evidence Collection Service → Evidence Repository → Rule Evaluation Service → Rule Evaluator → Scoring Engine → Reporters.
 
-Phase 4 evaluation flow: Repository → EvidenceCollectionService → EvidenceRepository → RuleEvaluationService → RuleResult.
+Evaluation flow: Repository → EvidenceCollectionService → EvidenceRepository → RuleEvaluationService → RuleResult → ScoringService → ReportBuilder/ReportWriter.
 
 Evidence collection remains separate from rule evaluation. Collectors only capture raw facts; rules are declarative and evaluated later by RuleEvaluator.
 
-Phase 4 implements evidence-to-rule matching only. Scoring and reporting remain placeholders.
+EARF now includes deterministic scoring and reporting. Production status is based primarily on applicable core controls and core critical blockers.
 
-Future extension points: real collectors, evidence matching, scoring strategies, readiness levels, report rendering, and optional LLM-assisted analysis.
+Future extension points: additional deterministic collectors/patterns, richer capability signals, and optional external integrations.
 
 Collectors must not embed category-specific logic (e.g., RAG, safety, privacy). This prevents duplication and keeps rules portable.
 

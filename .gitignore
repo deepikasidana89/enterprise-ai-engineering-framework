@@ -26,6 +26,7 @@ dist/
 
 # Generated EARF reports
 EARF_REPORT.md
+REPORT.md
 earf-report.json
 report.json
 report.html

@@ -27,4 +27,5 @@ def test_not_ready_example_fails_readiness() -> None:
     assert analysis.readiness_score.production_readiness == ProductionReadiness.NOT_READY
     assert analysis.readiness_score.failed_rules >= 2
     assert analysis.readiness_score.not_applicable_rules >= 1
-    assert analysis.readiness_score.critical_failures >= 1
+    assert analysis.readiness_score.high_failures >= 1
+    assert analysis.readiness_score.core_readiness_score < 70.0

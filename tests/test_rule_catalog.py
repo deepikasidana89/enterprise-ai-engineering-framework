@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from earf.exceptions import RuleNotFoundError
+from earf.models import ControlTier, Severity
 from earf.rules.catalog import RuleCatalog
 
 
@@ -83,3 +84,13 @@ def test_real_rules_directory_expectations() -> None:
     assert len(ids) == len(set(ids))
     assert all(rule.rationale.strip() for rule in rules)
     assert all(rule.recommendation.strip() for rule in rules)
+
+
+def test_sec_001_is_high_core() -> None:
+    rules_dir = Path(__file__).resolve().parents[1] / "rules"
+    catalog, _ = RuleCatalog.from_path(rules_dir)
+
+    rule = catalog.get("SEC-001")
+
+    assert rule.severity == Severity.HIGH
+    assert rule.tier == ControlTier.CORE

@@ -10,6 +10,8 @@ Instead of asking only *“How accurate is the model?”*, EARF asks a broader e
 
 EARF turns repository evidence into deterministic rule evaluations, severity-weighted readiness scores, and actionable reports.
 
+Current release status: **Early Developer Release** (version `0.7.0`).
+
 ---
 
 ## 🚀 What EARF Does
@@ -34,8 +36,8 @@ The goal is to make **AI production readiness more measurable, repeatable, and e
 Clone EARF:
 
 ```bash
-git clone https://github.com/deepikasidana89/enterprise-ai-engineering-framework.git
-cd enterprise-ai-engineering-framework
+git clone https://github.com/deepikasidana89/enterprise-ai-readiness-framework.git
+cd enterprise-ai-readiness-framework
 ```
 
 Install locally:
@@ -56,20 +58,36 @@ Or:
 python -m earf report /path/to/your-ai-project
 ```
 
-Generate a Markdown report:
+Score a repository:
 
 ```bash
+earf score .
+# or
 python -m earf score .
 ```
 
-Report generation:
+Console report:
 
 ```bash
+earf report .
+# or
 python -m earf report .
-python -m earf report . --format json
-python -m earf report . --format markdown
-python -m earf report . --format json --output report.json
-python -m earf report . --format markdown --output report.md
+```
+
+JSON report:
+
+```bash
+earf report . --format json --output earf-report.json
+# or
+python -m earf report . --format json --output earf-report.json
+```
+
+Markdown report:
+
+```bash
+earf report . --format markdown --output EARF_REPORT.md
+# or
+python -m earf report . --format markdown --output EARF_REPORT.md
 ```
 
 Default report filenames:
@@ -79,16 +97,24 @@ Default report filenames:
 
 Console example:
 
+Illustrative example output (values shown here are examples, not a live assessment result):
+
 ```text
 EARF Enterprise AI Readiness Report
 
 Repository: enterprise-ai-readiness-framework
 Generated: 2026-07-22T00:00:00Z
-EARF Version: 0.1.0-dev
+EARF Version: 0.7.0
 
-Overall Readiness
+Overall Assessment
 
-11.1 / 100
+Core Readiness: 82.0 / 100
+Advanced Controls: 61.0 / 100
+Assessment Coverage: 78.0%
+
+Production Status
+
+READY_WITH_WARNINGS
 ```
 
 Report JSON schema overview:
@@ -116,7 +142,7 @@ JSON example:
 {
 	"repository_name": "enterprise-ai-readiness-framework",
 	"generated_at": "2026-07-22T00:00:00Z",
-	"earf_version": "0.1.0-dev",
+	"earf_version": "0.7.0",
 	"core_readiness": {
 		"score": 82.0,
 		"passed": 14,
@@ -134,8 +160,8 @@ JSON example:
 		"evaluated": 16,
 		"applicable": 22
 	},
-	"overall_score": 11.1,
-	"production_status": "NOT_READY"
+	"overall_score": 74.3,
+	"production_status": "READY_WITH_WARNINGS"
 }
 ```
 
@@ -156,7 +182,7 @@ Markdown example:
 
 Repository: enterprise-ai-readiness-framework
 Generated: 2026-07-22T00:00:00Z
-EARF Version: 0.1.0-dev
+EARF Version: 0.7.0
 ```
 
 Note: EARF findings indicate the presence or absence of implementation evidence. They do not prove that a control is fully effective and do not constitute certification, compliance approval, legal advice, or security assurance.
@@ -166,6 +192,8 @@ Note: EARF findings indicate the presence or absence of implementation evidence.
 - Production readiness is based primarily on applicable `core` controls.
 - Advanced controls represent enterprise AI maturity beyond baseline production readiness and are reported separately.
 - The existing overall score is preserved for compatibility and trend tracking.
+
+EARF detects engineering evidence. A `PASS` indicates supported evidence was detected; it does not prove that a control is correctly or completely implemented.
 
 ### Assessment Coverage
 
@@ -177,7 +205,13 @@ Assessment Coverage represents the percentage of applicable EARF controls that c
 
 Assessment Coverage does not represent the percentage of an application's implementation inspected or verified.
 
-EARF detects engineering evidence. A `PASS` indicates supported evidence was detected; it does not prove that a control is correctly or completely implemented.
+### Current Limitations
+
+- EARF uses deterministic repository analysis and pattern-based source inspection.
+- EARF does not perform AST-level semantic verification of implementation correctness.
+- EARF does not use LLM-based repository analysis.
+- Custom enterprise implementations may not always be recognized by current deterministic patterns.
+- A detected evidence signal does not guarantee that the control is complete or correctly implemented.
 
 ## Key Concepts
 
