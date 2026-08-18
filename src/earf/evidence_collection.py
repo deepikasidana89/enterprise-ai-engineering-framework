@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from .collectors.base import EvidenceCollector
+from .collectors.code_pattern_collector import CodePatternCollector
 from .collectors.config_collector import ConfigCollector
 from .collectors.dependency_collector import DependencyCollector
 from .collectors.file_collector import FileCollector
@@ -19,6 +20,7 @@ class EvidenceCollectionService:
             DependencyCollector(),
             WorkflowCollector(),
             ConfigCollector(),
+            CodePatternCollector(),
             SecretManagementCollector(),
         ]
 

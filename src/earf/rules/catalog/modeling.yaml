@@ -21,6 +21,7 @@ rules:
             - google-generativeai
             - azure-ai-inference
     rationale: Explicit provider configuration improves reproducibility.
+    failure_message: Explicit model or provider configuration evidence was not detected.
     recommendation: Add explicit model/provider configuration settings.
     tags: [model, configuration]
     references: []
@@ -68,6 +69,7 @@ rules:
             - google-generativeai
             - azure-ai-inference
     rationale: Version visibility reduces drift and debugging effort.
+    failure_message: Model versioning or pinning evidence was not detected.
     recommendation: Document model versions and update procedures.
     tags: [model, versioning]
     references: []

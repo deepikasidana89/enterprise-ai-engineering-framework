@@ -44,12 +44,34 @@ def _rule(
     )
 
 
+def _rule_with_failure_message(
+    message: str,
+    *,
+    evidence_requirements: dict[str, object] | None = None,
+) -> RuleDefinition:
+    return RuleDefinition(
+        id="SAF-001",
+        title="Input validation is present",
+        description="Sample description",
+        category="safety",
+        severity=Severity.HIGH,
+        enabled=True,
+        applicability={"always": True},
+        evidence_requirements=evidence_requirements or {
+            "evidence_type": "file",
+            "identifiers": ["README.md"],
+        },
+        failure_message=message,
+    )
+
+
 def _evidence(
     evidence_type: EvidenceType,
     identifier: str,
     *,
     source: str = "collector",
     path: str | None = None,
+    metadata: dict[str, object] | None = None,
 ) -> Evidence:
     return Evidence(
         evidence_type=evidence_type,
@@ -58,6 +80,7 @@ def _evidence(
         identifier=identifier,
         path=path,
         location=path,
+        metadata=metadata or {},
     )
 
 
@@ -298,6 +321,69 @@ def test_path_filtering() -> None:
     assert result.status == RuleStatus.PASS
 
 
+def test_scope_filtering_passes_with_matching_scope() -> None:
+    repo = EvidenceRepository()
+    repo.add(
+        _evidence(
+            EvidenceType.CODE_PATTERN,
+            "python_tenacity_retry",
+            source="code_pattern",
+            path="src/service.py",
+            metadata={"source_scope": "production"},
+        )
+    )
+
+    rule = _rule(
+        evidence_requirements={
+            "evidence_type": "code_pattern",
+            "scope": "production",
+            "identifiers": ["python_tenacity_retry"],
+        }
+    )
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.PASS
+
+
+def test_scope_filtering_fails_when_scope_mismatch() -> None:
+    repo = EvidenceRepository()
+    repo.add(
+        _evidence(
+            EvidenceType.CODE_PATTERN,
+            "python_tenacity_retry",
+            source="code_pattern",
+            path="src/service.py",
+            metadata={"source_scope": "production"},
+        )
+    )
+
+    rule = _rule(
+        evidence_requirements={
+            "evidence_type": "code_pattern",
+            "scope": "test",
+            "identifiers": ["python_tenacity_retry"],
+        }
+    )
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.FAIL
+    assert any("scope=test" in item for item in result.missing_requirements)
+
+
+def test_scope_filter_invalid_value_returns_error() -> None:
+    repo = EvidenceRepository()
+    rule = _rule(
+        evidence_requirements={
+            "evidence_type": "code_pattern",
+            "scope": "staging",
+            "identifiers": ["python_tenacity_retry"],
+        }
+    )
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.ERROR
+
+
 def test_missing_evidence_fails() -> None:
     repo = EvidenceRepository()
     rule = _rule(
@@ -381,3 +467,52 @@ def test_empty_evidence_repository_fails_when_applicable() -> None:
     result = RuleEvaluator().evaluate(rule, repo)
 
     assert result.status == RuleStatus.FAIL
+
+
+def test_fail_uses_rule_failure_message_when_present() -> None:
+    repo = EvidenceRepository()
+    rule = _rule_with_failure_message(
+        "Input validation evidence was not detected.",
+        evidence_requirements={
+            "evidence_type": "file",
+            "identifiers": ["README.md"],
+        },
+    )
+
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.FAIL
+    assert result.message == "Input validation evidence was not detected."
+
+
+def test_fail_uses_generic_fallback_message_when_rule_has_no_failure_message() -> None:
+    repo = EvidenceRepository()
+    rule = _rule(
+        rule_id="OBS-001",
+        evidence_requirements={
+            "evidence_type": "file",
+            "identifiers": ["README.md"],
+        },
+    )
+
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.FAIL
+    assert result.message == "Required evidence for this control was not detected."
+
+
+def test_pass_does_not_use_failure_message() -> None:
+    repo = EvidenceRepository()
+    repo.add(_evidence(EvidenceType.FILE, "README.md"))
+    rule = _rule_with_failure_message(
+        "Input validation evidence was not detected.",
+        evidence_requirements={
+            "evidence_type": "file",
+            "identifiers": ["README.md"],
+        },
+    )
+
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.PASS
+    assert result.message != "Input validation evidence was not detected."

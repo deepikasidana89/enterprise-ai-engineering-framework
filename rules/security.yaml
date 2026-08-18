@@ -9,6 +9,7 @@ rules:
     applicability:
       always: true
     rationale: Externalized secret management reduces credential exposure risk and supports operational controls.
+    failure_message: No supported evidence of externalized secret management was detected.
     recommendation: Integrate a supported secret manager or documented internal secret-management abstraction with implementation evidence.
     tags: [security, secrets]
     references: []
@@ -87,6 +88,7 @@ rules:
             - google-generativeai
             - azure-ai-inference
     rationale: Least privilege limits blast radius of compromised workflows.
+    failure_message: Least-privilege access control evidence was not detected.
     recommendation: Restrict tool scopes and runtime permissions.
     tags: [security, least-privilege]
     references: []

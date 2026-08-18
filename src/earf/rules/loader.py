@@ -201,6 +201,11 @@ class YamlRuleLoader(RuleLoader):
                 enabled=_ensure_bool(data.get("enabled", True), "enabled", rule_id),
                 applicability=_ensure_dict(applicability, "applicability", rule_id),
                 rationale=_ensure_string(data.get("rationale", ""), "rationale", rule_id),
+                failure_message=_ensure_string(
+                    data.get("failure_message", ""),
+                    "failure_message",
+                    rule_id,
+                ),
                 recommendation=_ensure_string(
                     data.get("recommendation", ""),
                     "recommendation",

@@ -23,11 +23,11 @@ class ReportWriter:
             key=lambda item: item[0].lower(),
         )
         critical_findings = cast(
-            list[dict[str, str]],
+            list[dict[str, object]],
             report.metadata.get("critical_findings", []),
         )
         high_findings = cast(
-            list[dict[str, str]],
+            list[dict[str, object]],
             report.metadata.get("high_findings", []),
         )
         recommendations = cast(
@@ -84,14 +84,14 @@ class ReportWriter:
 
         if critical_findings:
             for finding in critical_findings:
-                lines.append(f"{finding['rule_id']}  {finding['title']}")
+                self._append_console_finding(lines, finding)
         else:
             lines.append("None")
 
         lines.extend(["", "High Findings", ""])
         if high_findings:
             for finding in high_findings:
-                lines.append(f"{finding['rule_id']}  {finding['title']}")
+                self._append_console_finding(lines, finding)
         else:
             lines.append("None")
 
@@ -117,11 +117,11 @@ class ReportWriter:
             report.metadata.get("rule_details", []),
         )
         critical_findings = cast(
-            list[dict[str, str]],
+            list[dict[str, object]],
             report.metadata.get("critical_findings", []),
         )
         high_findings = cast(
-            list[dict[str, str]],
+            list[dict[str, object]],
             report.metadata.get("high_findings", []),
         )
         recommendations = cast(
@@ -179,14 +179,14 @@ class ReportWriter:
 
         if critical_findings:
             for finding in critical_findings:
-                lines.append(f"- {finding['rule_id']}: {finding['title']}")
+                self._append_markdown_finding(lines, finding)
         else:
             lines.append("- None")
 
         lines.extend(["", "## High Findings", ""])
         if high_findings:
             for finding in high_findings:
-                lines.append(f"- {finding['rule_id']}: {finding['title']}")
+                self._append_markdown_finding(lines, finding)
         else:
             lines.append("- None")
 
@@ -238,11 +238,11 @@ class ReportWriter:
             report.metadata.get("rule_details", []),
         )
         critical_findings = cast(
-            list[dict[str, str]],
+            list[dict[str, object]],
             report.metadata.get("critical_findings", []),
         )
         high_findings = cast(
-            list[dict[str, str]],
+            list[dict[str, object]],
             report.metadata.get("high_findings", []),
         )
         recommendations = cast(
@@ -274,3 +274,50 @@ class ReportWriter:
             "recommendations": recommendations,
             "metadata": dict(report.metadata),
         }
+
+    def _append_console_finding(self, lines: list[str], finding: dict[str, object]) -> None:
+        severity = str(finding.get("severity", ""))
+        rule_id = str(finding.get("rule_id", ""))
+        title = str(finding.get("title", ""))
+        failure_message = str(finding.get("failure_message", "")).strip()
+        recommendation = str(finding.get("recommendation", "")).strip()
+
+        lines.append(f"[{severity}] {rule_id} - {title}")
+        lines.append("Reason:")
+        lines.append(failure_message or "Required evidence for this control was not detected.")
+        lines.append("Action:")
+        lines.append(recommendation or "No recommendation provided.")
+
+        missing = finding.get("missing_requirements")
+        if isinstance(missing, list) and missing:
+            lines.append("Missing:")
+            for item in missing:
+                lines.append(f"- {item}")
+        lines.append("")
+
+    def _append_markdown_finding(self, lines: list[str], finding: dict[str, object]) -> None:
+        severity = str(finding.get("severity", ""))
+        status = str(finding.get("status", ""))
+        rule_id = str(finding.get("rule_id", ""))
+        title = str(finding.get("title", ""))
+        failure_message = str(finding.get("failure_message", "")).strip()
+        recommendation = str(finding.get("recommendation", "")).strip()
+
+        lines.append(f"### {rule_id} - {title}")
+        lines.append("")
+        lines.append(f"**Severity:** {severity.title()}")
+        lines.append("")
+        lines.append(f"**Status:** {status}")
+        lines.append("")
+        lines.append(f"**Reason:** {failure_message or 'Required evidence for this control was not detected.'}")
+        lines.append("")
+        lines.append(f"**Recommendation:** {recommendation or 'No recommendation provided.'}")
+        lines.append("")
+
+        missing = finding.get("missing_requirements")
+        if isinstance(missing, list) and missing:
+            lines.append("**Missing evidence checks:**")
+            lines.append("")
+            for item in missing:
+                lines.append(f"- {item}")
+            lines.append("")

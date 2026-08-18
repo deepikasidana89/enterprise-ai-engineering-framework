@@ -8,7 +8,7 @@ from earf.rules.catalog import RuleCatalog
 from earf.rules.evaluation_service import RuleEvaluationService
 from earf.rules.results import RuleStatus
 
-SUPPORTED_RULE_EVIDENCE_TYPES = {"file", "dependency", "workflow", "configuration"}
+SUPPORTED_RULE_EVIDENCE_TYPES = {"file", "dependency", "workflow", "configuration", "code_pattern"}
 
 
 def _rules_dir() -> Path:

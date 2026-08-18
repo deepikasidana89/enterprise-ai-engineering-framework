@@ -21,6 +21,7 @@ rules:
             - google-generativeai
             - azure-ai-inference
     rationale: Timeouts prevent hangs and preserve service stability.
+    failure_message: Timeout configuration evidence for model calls was not detected.
     recommendation: Set timeout values for all model calls.
     tags: [reliability, timeout]
     references: []
@@ -56,6 +57,7 @@ rules:
             - google-generativeai
             - azure-ai-inference
     rationale: Retries and fallback reduce transient failure impact.
+    failure_message: Retry or resilience implementation evidence was not detected.
     recommendation: Implement bounded retries or alternate provider fallback.
     tags: [reliability, retry, fallback]
     references: []
@@ -67,4 +69,11 @@ rules:
         - evidence_type: dependency
           path: pyproject.toml
           identifiers: [tenacity, backoff]
+        - evidence_type: code_pattern
+          identifiers:
+            - retry_annotation
+            - retry_template
+            - resilience4j_retry
+            - python_tenacity_retry
+            - circuit_breaker_fallback
     metadata: {}

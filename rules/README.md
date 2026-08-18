@@ -36,6 +36,15 @@ Supported deterministic evidence types in Phase 4:
 - `dependency`
 - `workflow`
 - `configuration`
+- `code_pattern`
+
+Optional direct requirement filters:
+
+- `source`: evidence source name emitted by a collector.
+- `path`: string or list of strings matching normalized relative paths.
+- `scope`: `production`, `test`, or `any` (default behavior if omitted).
+
+`scope` filtering uses evidence metadata field `source_scope` when available.
 
 Project design rule:
 
@@ -46,6 +55,10 @@ Project design rule:
 Required fields:
 
 - `id`, `title`, `description`, `category`, `severity`
+
+Optional fields:
+
+- `failure_message`: explicit human-readable reason used when a rule fails. If omitted, EARF falls back to a generic evidence-oriented message.
 
 Rule ID format:
 

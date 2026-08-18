@@ -20,6 +20,7 @@ SEC_001_SUPPORTING_IDENTIFIERS = {
     "sec.externalized_secret.sensitive_env_access",
 }
 SEC_001_WEAK_FILE_IDENTIFIERS = {".env.example", "SECURITY.md"}
+DEFAULT_MISSING_EVIDENCE_MESSAGE = "Required evidence for this control was not detected."
 
 
 @dataclass(frozen=True)
@@ -82,7 +83,7 @@ class RuleEvaluator:
             return RuleResult(
                 rule_id=rule.id,
                 status=RuleStatus.FAIL,
-                message="Missing required evidence.",
+                message=self._failure_message_for(rule),
                 matched_evidence=matched_evidence,
                 missing_requirements=match.missing_requirements,
             )
@@ -135,10 +136,16 @@ class RuleEvaluator:
         return RuleResult(
             rule_id=rule.id,
             status=RuleStatus.FAIL,
-            message="No supported evidence of externalized secret management was detected.",
+            message=self._failure_message_for(rule),
             matched_evidence=[],
             missing_requirements=match.missing_requirements,
         )
+
+    def _failure_message_for(self, rule: RuleDefinition) -> str:
+        message = rule.failure_message.strip()
+        if message:
+            return message
+        return DEFAULT_MISSING_EVIDENCE_MESSAGE
 
     def _find_sec_001_potential_evidence(
         self,
@@ -267,6 +274,7 @@ class RuleEvaluator:
         evidence_type = self._parse_evidence_type(evidence_type_raw)
         source = self._optional_string(requirement.get("source"), field_name="source")
         path_filter = self._normalize_path_filter(requirement.get("path"))
+        scope_filter = self._normalize_scope_filter(requirement.get("scope"))
         identifiers = self._normalize_identifiers(requirement.get("identifiers"))
 
         candidates = evidence_repository.find(
@@ -282,6 +290,13 @@ class RuleEvaluator:
                 and self._normalize_path_value(item.path) in path_filter
             ]
 
+        if scope_filter is not None:
+            candidates = [
+                item
+                for item in candidates
+                if str(item.metadata.get("source_scope", "")).strip().lower() == scope_filter
+            ]
+
         if identifiers is None:
             if candidates:
                 return RequirementMatch(
@@ -292,7 +307,7 @@ class RuleEvaluator:
             return RequirementMatch(
                 matched=False,
                 matched_evidence=[],
-                missing_requirements=[self._describe_missing(evidence_type, identifiers, source, path_filter)],
+                missing_requirements=[self._describe_missing(evidence_type, identifiers, source, path_filter, scope_filter)],
             )
 
         matched = [
@@ -310,8 +325,25 @@ class RuleEvaluator:
         return RequirementMatch(
             matched=False,
             matched_evidence=[],
-            missing_requirements=[self._describe_missing(evidence_type, identifiers, source, path_filter)],
+            missing_requirements=[self._describe_missing(evidence_type, identifiers, source, path_filter, scope_filter)],
         )
+
+    def _normalize_scope_filter(self, value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise InvalidEvidenceRequirementError("scope must be a string")
+
+        normalized = value.strip().lower()
+        if not normalized:
+            return None
+        if normalized == "any":
+            return None
+        if normalized not in {"production", "test"}:
+            raise InvalidEvidenceRequirementError(
+                "scope must be one of: production, test, any"
+            )
+        return normalized
 
     def _parse_evidence_type(self, value: str) -> EvidenceType:
         token = value.strip().upper()
@@ -370,6 +402,7 @@ class RuleEvaluator:
         identifiers: set[str] | None,
         source: str | None,
         path_filter: set[str] | None,
+        scope_filter: str | None,
     ) -> str:
         details: list[str] = [f"evidence_type={evidence_type.value.lower()}"]
         if identifiers:
@@ -378,6 +411,8 @@ class RuleEvaluator:
             details.append(f"source={source}")
         if path_filter:
             details.append(f"path={sorted(path_filter)}")
+        if scope_filter:
+            details.append(f"scope={scope_filter}")
         return "Missing requirement: " + ", ".join(details)
 
     def _normalize_path_value(self, value: str) -> str:

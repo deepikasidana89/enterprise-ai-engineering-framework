@@ -21,6 +21,7 @@ rules:
             - google-generativeai
             - azure-ai-inference
     rationale: Telemetry enables incident response and continuous tuning.
+    failure_message: AI observability or tracing evidence was not detected.
     recommendation: Add structured logs and telemetry for AI interactions.
     tags: [observability, logging]
     references: []

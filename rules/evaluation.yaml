@@ -21,6 +21,7 @@ rules:
             - google-generativeai
             - azure-ai-inference
     rationale: Automated evaluations catch regressions before release.
+    failure_message: Automated AI evaluation evidence was not detected.
     recommendation: Add repeatable AI evaluation tests to CI workflows.
     tags: [evaluation, testing]
     references: []

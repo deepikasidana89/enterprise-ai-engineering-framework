@@ -39,6 +39,7 @@ class EvidenceType(Enum):
     FILE = "FILE"
     DEPENDENCY = "DEPENDENCY"
     CONFIGURATION = "CONFIGURATION"
+    CODE_PATTERN = "CODE_PATTERN"
     SOURCE_CODE = "SOURCE_CODE"
     DOCUMENTATION = "DOCUMENTATION"
     WORKFLOW = "WORKFLOW"
@@ -92,6 +93,7 @@ class RuleDefinition:
     enabled: bool = True
     applicability: Metadata = field(default_factory=dict)
     rationale: str = ""
+    failure_message: str = ""
     recommendation: str = ""
     tags: list[str] = field(default_factory=list)
     references: list[str] = field(default_factory=list)

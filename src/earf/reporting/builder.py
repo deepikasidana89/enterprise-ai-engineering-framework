@@ -29,8 +29,8 @@ class ReportBuilder:
         )
 
         rule_details: list[dict[str, object]] = []
-        critical_findings: list[dict[str, str]] = []
-        high_findings: list[dict[str, str]] = []
+        critical_findings: list[dict[str, object]] = []
+        high_findings: list[dict[str, object]] = []
         recommendations: list[dict[str, str]] = []
         seen_recommendations: set[str] = set()
 
@@ -49,6 +49,7 @@ class ReportBuilder:
                     "severity": severity,
                     "status": result.status.name,
                     "message": result.message,
+                    "failure_message": result.message if result.status in {RuleStatus.FAIL, RuleStatus.MANUAL_REVIEW} else "",
                     "recommendation": recommendation,
                     "error": result.error,
                     "missing_requirements": list(result.missing_requirements),
@@ -58,7 +59,15 @@ class ReportBuilder:
             if result.status not in {RuleStatus.FAIL, RuleStatus.MANUAL_REVIEW} or rule is None:
                 continue
 
-            finding = {"rule_id": rule.id, "title": rule.title}
+            finding = {
+                "rule_id": rule.id,
+                "title": rule.title,
+                "severity": rule.severity.name,
+                "status": result.status.name,
+                "failure_message": result.message,
+                "recommendation": rule.recommendation,
+                "missing_requirements": list(result.missing_requirements),
+            }
             if rule.severity.name == "CRITICAL":
                 critical_findings.append(finding)
             elif rule.severity.name == "HIGH":

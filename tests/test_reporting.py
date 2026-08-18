@@ -26,6 +26,7 @@ def _rule(
     title: str,
     category: str,
     severity: Severity,
+    failure_message: str,
     recommendation: str,
 ) -> RuleDefinition:
     return RuleDefinition(
@@ -36,12 +37,13 @@ def _rule(
         severity=severity,
         applicability={"always": True},
         evidence_requirements={"evidence_type": "file", "identifiers": ["README.md"]},
+        failure_message=failure_message,
         recommendation=recommendation,
     )
 
 
-def _result(rule_id: str, status: RuleStatus) -> RuleResult:
-    return RuleResult(rule_id=rule_id, status=status, message="message")
+def _result(rule_id: str, status: RuleStatus, message: str = "message") -> RuleResult:
+    return RuleResult(rule_id=rule_id, status=status, message=message)
 
 
 def _score() -> ReadinessScore:
@@ -75,6 +77,7 @@ def _analysis_result() -> AnalysisResult:
                 title="Secrets are not hard-coded",
                 category="security",
                 severity=Severity.CRITICAL,
+                failure_message="No supported evidence of externalized secret management was detected.",
                 recommendation="Move secrets to environment variables or secret managers.",
             ),
             _rule(
@@ -82,6 +85,7 @@ def _analysis_result() -> AnalysisResult:
                 title="AI ownership documented",
                 category="governance",
                 severity=Severity.HIGH,
+                failure_message="AI ownership documentation evidence was not detected.",
                 recommendation="Add CODEOWNERS or OWNERS.",
             ),
             _rule(
@@ -89,6 +93,7 @@ def _analysis_result() -> AnalysisResult:
                 title="Timeouts defined",
                 category="reliability",
                 severity=Severity.HIGH,
+                failure_message="Timeout configuration evidence for model calls was not detected.",
                 recommendation="Add timeouts.",
             ),
             _rule(
@@ -96,15 +101,16 @@ def _analysis_result() -> AnalysisResult:
                 title="Telemetry present",
                 category="evaluation",
                 severity=Severity.HIGH,
+                failure_message="AI observability or tracing evidence was not detected.",
                 recommendation="Add CODEOWNERS or OWNERS.",
             ),
         ]
     )
     results = [
-        _result("REL-001", RuleStatus.FAIL),
+        _result("REL-001", RuleStatus.FAIL, "Timeout configuration evidence for model calls was not detected."),
         _result("GOV-001", RuleStatus.PASS),
-        _result("SEC-001", RuleStatus.FAIL),
-        _result("OBS-001", RuleStatus.FAIL),
+        _result("SEC-001", RuleStatus.FAIL, "No supported evidence of externalized secret management was detected."),
+        _result("OBS-001", RuleStatus.FAIL, "AI observability or tracing evidence was not detected."),
     ]
     evidence_repository = EvidenceRepository()
     for _ in range(3):
@@ -185,6 +191,7 @@ def test_not_applicable_rules_do_not_appear_in_findings_or_recommendations() -> 
                 title="AI ownership documented",
                 category="governance",
                 severity=Severity.HIGH,
+                failure_message="AI ownership documentation evidence was not detected.",
                 recommendation="Document ownership.",
             ),
             _rule(
@@ -192,6 +199,7 @@ def test_not_applicable_rules_do_not_appear_in_findings_or_recommendations() -> 
                 title="Model provider configured",
                 category="modeling",
                 severity=Severity.HIGH,
+                failure_message="Model provider configuration evidence was not detected.",
                 recommendation="Add provider configuration.",
             ),
         ]
@@ -240,9 +248,12 @@ def test_console_rendering() -> None:
     assert "Overall Readiness" in output
     assert "84.6 / 100" in output
     assert "Critical Findings" in output
-    assert "SEC-001  Secrets are not hard-coded" in output
+    assert "[CRITICAL] SEC-001 - Secrets are not hard-coded" in output
+    assert "Reason:" in output
+    assert "No supported evidence of externalized secret management was detected." in output
+    assert "Action:" in output
     assert "High Findings" in output
-    assert "OBS-001  Telemetry present" in output
+    assert "[HIGH] OBS-001 - Telemetry present" in output
     assert "Recommendations" in output
 
 
@@ -263,6 +274,8 @@ def test_json_serialization_and_enum_values(tmp_path: Path) -> None:
         "reliability": 0.0,
         "security": 66.7,
     }
+    failing = [row for row in parsed["rule_results"] if row["rule_id"] == "SEC-001"][0]
+    assert failing["failure_message"] == "No supported evidence of externalized secret management was detected."
 
 
 def test_markdown_rendering_and_file_output(tmp_path: Path) -> None:
@@ -276,6 +289,7 @@ def test_markdown_rendering_and_file_output(tmp_path: Path) -> None:
     assert "## Category Scores" in content
     assert "## Full Rule Results" in content
     assert "| Rule ID | Title | Category | Severity | Status | Recommendation |" in content
+    assert "**Reason:** No supported evidence of externalized secret management was detected." in content
     assert "## Recommendations" in content
 
 

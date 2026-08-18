@@ -21,6 +21,7 @@ rules:
             - google-generativeai
             - azure-ai-inference
     rationale: Input validation prevents unsafe or malformed requests.
+    failure_message: Input validation evidence was not detected.
     recommendation: Add validation and sanitization checks for AI inputs.
     tags: [safety, input-validation]
     references: []
@@ -56,6 +57,7 @@ rules:
             - google-generativeai
             - azure-ai-inference
     rationale: Output guardrails reduce harmful or policy-violating responses.
+    failure_message: Output guardrail evidence was not detected.
     recommendation: Add post-processing or policy checks for model outputs.
     tags: [safety, output-guardrails]
     references: []
