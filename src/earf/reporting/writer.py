@@ -46,6 +46,10 @@ class ReportWriter:
             list[dict[str, object]],
             report.metadata.get("manual_review_required", []),
         )
+        semantic_review_required = cast(
+            list[dict[str, object]],
+            report.metadata.get("semantic_review_required", []),
+        )
         critical_blockers = [
             item for item in core_gaps if str(item.get("severity", "")).upper() == "CRITICAL"
         ]
@@ -100,27 +104,27 @@ class ReportWriter:
             "",
             "Category Scores",
             "",
+            "Category          Score   Coverage",
         ]
 
         for category, detail in categories:
             scored_rules = detail.passed_rules + detail.failed_rules
+            total_tracked = (
+                detail.passed_rules
+                + detail.failed_rules
+                + detail.manual_review_rules
+                + detail.needs_semantic_review_rules
+                + detail.not_applicable_rules
+                + detail.disabled_rules
+                + detail.error_rules
+            )
             if scored_rules > 0:
-                score_text = f"{detail.percentage:>5.1f}"
-                count_text = f"({detail.passed_rules} passed, {detail.failed_rules} failed)"
+                score_text = f"{detail.score:>5.1f}" if detail.score is not None else "  N/A"
             else:
-                score_text = "    -"
-                unresolved_parts: list[str] = []
-                if detail.manual_review_rules:
-                    unresolved_parts.append(f"{detail.manual_review_rules} manual review")
-                if detail.not_applicable_rules:
-                    unresolved_parts.append(f"{detail.not_applicable_rules} not applicable")
-                if detail.disabled_rules:
-                    unresolved_parts.append(f"{detail.disabled_rules} disabled")
-                if detail.error_rules:
-                    unresolved_parts.append(f"{detail.error_rules} errors")
-                count_text = f"({', '.join(unresolved_parts) if unresolved_parts else '0 scored'})"
+                score_text = "  N/A"
+            coverage_text = f"{scored_rules}/{total_tracked}"
             lines.append(
-                f"{_title_case_category(category):<{category_width}}  {score_text}  {count_text}"
+                f"{_title_case_category(category):<{category_width}}  {score_text}  {coverage_text}"
             )
 
         lines.extend(["", "Critical Blockers", ""])
@@ -148,6 +152,13 @@ class ReportWriter:
         if manual_review_required:
             for finding in manual_review_required:
                 self._append_console_finding(lines, finding, action_label="Action")
+        else:
+            lines.append("None")
+
+        lines.extend(["", "Needs Semantic Review", ""])
+        if semantic_review_required:
+            for finding in semantic_review_required:
+                self._append_console_finding(lines, finding, action_label="Review")
         else:
             lines.append("None")
 
@@ -186,6 +197,7 @@ class ReportWriter:
                     f"{advanced_detail.failed_rules if advanced_detail else 0} opportunities"
                 ),
                 f"Manual Review: {report.readiness_score.manual_review_rules}",
+                f"Needs Semantic Review: {report.readiness_score.needs_semantic_review_rules}",
                 f"N/A: {report.readiness_score.not_applicable_rules}",
             ]
         )
@@ -221,6 +233,10 @@ class ReportWriter:
         manual_review_required = cast(
             list[dict[str, object]],
             report.metadata.get("manual_review_required", []),
+        )
+        semantic_review_required = cast(
+            list[dict[str, object]],
+            report.metadata.get("semantic_review_required", []),
         )
         critical_blockers = [
             item for item in core_gaps if str(item.get("severity", "")).upper() == "CRITICAL"
@@ -303,20 +319,31 @@ class ReportWriter:
             "",
             "## Category Scores",
             "",
-            "| Category | Score | Passed | Failed | Manual Review | N/A | Disabled | Errors |",
-            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+            "| Category | Score | Coverage | Passed | Failed | Manual Review | Needs Semantic Review | N/A | Disabled | Errors |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
 
         for category, detail in categories:
             scored_rules = detail.passed_rules + detail.failed_rules
-            score_text = f"{detail.percentage:.1f}" if scored_rules > 0 else "-"
+            total_tracked = (
+                detail.passed_rules
+                + detail.failed_rules
+                + detail.manual_review_rules
+                + detail.needs_semantic_review_rules
+                + detail.not_applicable_rules
+                + detail.disabled_rules
+                + detail.error_rules
+            )
+            score_text = f"{detail.score:.1f}" if detail.score is not None else "N/A"
             lines.append(
                 "| "
                 f"{_escape_markdown_table(_title_case_category(category))} | "
                 f"{score_text} | "
+                f"{scored_rules}/{total_tracked} | "
                 f"{detail.passed_rules} | "
                 f"{detail.failed_rules} | "
                 f"{detail.manual_review_rules} | "
+                f"{detail.needs_semantic_review_rules} | "
                 f"{detail.not_applicable_rules} | "
                 f"{detail.disabled_rules} | "
                 f"{detail.error_rules} |"
@@ -332,6 +359,7 @@ class ReportWriter:
                 f"| Passed | {report.readiness_score.passed_rules} |",
                 f"| Failed | {report.readiness_score.failed_rules} |",
                 f"| Manual Review | {report.readiness_score.manual_review_rules} |",
+                f"| Needs Semantic Review | {report.readiness_score.needs_semantic_review_rules} |",
                 f"| Not Applicable | {report.readiness_score.not_applicable_rules} |",
                 f"| Disabled | {report.readiness_score.disabled_rules} |",
                 f"| Errors | {report.readiness_score.error_rules} |",
@@ -397,6 +425,13 @@ class ReportWriter:
         else:
             lines.append("- None")
 
+        lines.extend(["", "## Needs Semantic Review", ""])
+        if semantic_review_required:
+            for finding in semantic_review_required:
+                self._append_markdown_finding(lines, finding, action_label="Review")
+        else:
+            lines.append("- None")
+
         lines.extend(["", "## Passed Controls", ""])
         if passed_controls:
             for item in passed_controls:
@@ -455,14 +490,12 @@ class ReportWriter:
         category_details = report.readiness_score.category_details
         category_score_details = {
             category: {
-                "score": (
-                    detail.percentage
-                    if (detail.passed_rules + detail.failed_rules) > 0
-                    else None
-                ),
+                "score": detail.score,
+                "assessment_status": detail.assessment_status,
                 "passed": detail.passed_rules,
                 "failed": detail.failed_rules,
                 "manual_review": detail.manual_review_rules,
+                "needs_semantic_review": detail.needs_semantic_review_rules,
                 "not_applicable": detail.not_applicable_rules,
                 "disabled": detail.disabled_rules,
                 "errors": detail.error_rules,
@@ -516,6 +549,7 @@ class ReportWriter:
                 "passed": report.readiness_score.passed_rules,
                 "failed": report.readiness_score.failed_rules,
                 "manual_review": report.readiness_score.manual_review_rules,
+                "needs_semantic_review": report.readiness_score.needs_semantic_review_rules,
                 "not_applicable": report.readiness_score.not_applicable_rules,
                 "disabled": report.readiness_score.disabled_rules,
                 "errors": report.readiness_score.error_rules,

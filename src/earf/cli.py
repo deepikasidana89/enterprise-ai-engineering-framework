@@ -86,6 +86,11 @@ def evaluate(
         "--show-evidence",
         help="Show matched evidence identifiers per rule",
     ),
+    explain: bool = typer.Option(
+        False,
+        "--explain",
+        help="Explain applicability and evidence decisions for each rule",
+    ),
     rules_path: Path | None = typer.Option(
         None,
         "--rules-path",
@@ -122,10 +127,31 @@ def evaluate(
                 matched_ids = ", ".join(rendered)
                 typer.echo(f"  matched: {matched_ids}")
 
+            if explain:
+                applicability_reason = str(result.metadata.get("applicability_reason", "")).strip()
+                uncertain_reasons = result.metadata.get("applicability_uncertain_reasons", [])
+                if result.status == RuleStatus.NOT_APPLICABLE:
+                    typer.echo(f"  applicability: FALSE - {applicability_reason or 'No applicability evidence detected.'}")
+                elif result.status == RuleStatus.NEEDS_SEMANTIC_REVIEW:
+                    typer.echo(
+                        f"  applicability: UNCERTAIN - {applicability_reason or 'Deterministic applicability is inconclusive.'}"
+                    )
+                    if isinstance(uncertain_reasons, list):
+                        for reason in uncertain_reasons:
+                            typer.echo(f"    uncertain_reason: {reason}")
+                else:
+                    typer.echo("  applicability: TRUE")
+
+                if result.missing_requirements:
+                    typer.echo("  missing_requirements:")
+                    for requirement in result.missing_requirements:
+                        typer.echo(f"    - {requirement}")
+
         summary = {
             RuleStatus.PASS: 0,
             RuleStatus.FAIL: 0,
             RuleStatus.MANUAL_REVIEW: 0,
+            RuleStatus.NEEDS_SEMANTIC_REVIEW: 0,
             RuleStatus.NOT_APPLICABLE: 0,
             RuleStatus.DISABLED: 0,
             RuleStatus.ERROR: 0,
@@ -139,6 +165,7 @@ def evaluate(
         typer.echo(f"Passed: {summary[RuleStatus.PASS]}")
         typer.echo(f"Failed: {summary[RuleStatus.FAIL]}")
         typer.echo(f"Manual Review: {summary[RuleStatus.MANUAL_REVIEW]}")
+        typer.echo(f"Needs Semantic Review: {summary[RuleStatus.NEEDS_SEMANTIC_REVIEW]}")
         typer.echo(f"Not Applicable: {summary[RuleStatus.NOT_APPLICABLE]}")
         typer.echo(f"Disabled: {summary[RuleStatus.DISABLED]}")
         typer.echo(f"Errors: {summary[RuleStatus.ERROR]}")
@@ -175,15 +202,31 @@ def score(
         typer.echo("")
         typer.echo("Category Scores")
         typer.echo("")
+        typer.echo("Category          Score   Coverage")
         for category in readiness.category_ranking():
-            value = readiness.category_scores.get(category, 0.0)
-            typer.echo(f"{category.title():<16}{value:>7.1f}")
+            detail = readiness.category_details.get(category)
+            if detail is None:
+                continue
+            scored = detail.passed_rules + detail.failed_rules
+            tracked = (
+                detail.passed_rules
+                + detail.failed_rules
+                + detail.manual_review_rules
+                + detail.needs_semantic_review_rules
+                + detail.not_applicable_rules
+                + detail.disabled_rules
+                + detail.error_rules
+            )
+            value = readiness.category_scores.get(category)
+            score_text = f"{value:>5.1f}" if value is not None else "  N/A"
+            typer.echo(f"{category.title():<16}{score_text}   {scored}/{tracked}")
 
         typer.echo("")
         typer.echo("Summary")
         typer.echo("")
         typer.echo(f"Passed: {readiness.passed_rules}")
         typer.echo(f"Failed: {readiness.failed_rules}")
+        typer.echo(f"Needs Semantic Review: {readiness.needs_semantic_review_rules}")
         typer.echo(f"Not Applicable: {readiness.not_applicable_rules}")
         typer.echo(f"Disabled: {readiness.disabled_rules}")
         typer.echo(f"Errors: {readiness.error_rules}")

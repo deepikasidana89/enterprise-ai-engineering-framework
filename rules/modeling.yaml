@@ -8,19 +8,8 @@ rules:
     version: "1.0"
     enabled: true
     applicability:
-      any:
-        - evidence_type: dependency
-          identifiers:
-            - openai
-            - anthropic
-            - langchain
-            - langgraph
-            - transformers
-            - llama-index
-            - litellm
-            - semantic-kernel
-            - google-generativeai
-            - azure-ai-inference
+      all:
+        - capability: uses_llm
     rationale: Explicit provider configuration improves reproducibility.
     failure_message: Explicit model or provider configuration evidence was not detected.
     recommendation: Add explicit model/provider configuration settings.
@@ -57,19 +46,8 @@ rules:
     version: "1.0"
     enabled: true
     applicability:
-      any:
-        - evidence_type: dependency
-          identifiers:
-            - openai
-            - anthropic
-            - langchain
-            - langgraph
-            - transformers
-            - llama-index
-            - litellm
-            - semantic-kernel
-            - google-generativeai
-            - azure-ai-inference
+      all:
+        - capability: uses_llm
     rationale: Version visibility reduces drift and debugging effort.
     failure_message: Model versioning or pinning evidence was not detected.
     recommendation: Document model versions and update procedures.

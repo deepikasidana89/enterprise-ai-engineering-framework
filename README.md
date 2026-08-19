@@ -250,6 +250,19 @@ Note: EARF findings indicate the presence or absence of implementation evidence.
 
 EARF detects engineering evidence. A `PASS` indicates supported evidence was detected; it does not prove that a control is correctly or completely implemented.
 
+### Deterministic Result States
+
+- `PASS`: The control applies and EARF found supported implementation evidence.
+- `FAIL`: The control applies but EARF did not find sufficient supported implementation evidence.
+- `NOT_APPLICABLE`: EARF found sufficient deterministic evidence that the control does not apply to this repository.
+- `NEEDS_SEMANTIC_REVIEW`: Deterministic evidence is insufficient to safely determine applicability or implementation. This state is surfaced for manual follow-up and is not treated as PASS/FAIL.
+
+Category score interpretation:
+
+- Numeric score (for example `100.0`, `63.6`, `0.0`) means the category had at least one deterministically assessed control (`PASS` or `FAIL`).
+- `N/A` means the category was not scored because no controls in that category were deterministically assessed.
+- `N/A` does not mean the repository failed that category.
+
 ### Automated Evaluation Coverage
 
 Automated Evaluation Coverage represents the percentage of applicable EARF controls that were automatically resolved by deterministic checks.

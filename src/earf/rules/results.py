@@ -10,6 +10,7 @@ class RuleStatus(Enum):
     PASS = "pass"
     FAIL = "fail"
     MANUAL_REVIEW = "manual_review"
+    NEEDS_SEMANTIC_REVIEW = "needs_semantic_review"
     NOT_APPLICABLE = "not_applicable"
     DISABLED = "disabled"
     ERROR = "error"

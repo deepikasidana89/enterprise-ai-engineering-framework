@@ -448,3 +448,83 @@ def test_capability_provenance_includes_dependency_and_code_pattern(tmp_path: Pa
     identifiers = {item.identifier for item in detection.evidence}
     assert "langgraph" in identifiers
     assert "langgraph_state_graph" in identifiers
+
+
+def test_direct_openai_usage_makes_evaluation_applicable_and_fails_without_eval_impl(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text(
+        "from openai import OpenAI\n"
+        "client = OpenAI()\n"
+        "client.responses.create(model='gpt-4o-mini', input='hi')\n",
+        encoding="utf-8",
+    )
+
+    rule = _rule(
+        "EVA-001",
+        applicability={"all": [{"capability": "uses_llm"}]},
+        evidence_requirements={
+            "evidence_type": "workflow",
+            "identifiers": ["ci.yml", "ci.yaml", "evaluation.yml", "evaluation.yaml"],
+        },
+    )
+
+    result = RuleEvaluationService().evaluate_all(RuleCatalog([rule]), _collect(tmp_path))[0]
+
+    assert result.status == RuleStatus.FAIL
+
+
+def test_ai_with_evaluation_workflow_passes_evaluation_rule(tmp_path: Path) -> None:
+    (tmp_path / "requirements.txt").write_text("openai>=1.0\n", encoding="utf-8")
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "evaluation.yml").write_text("name: evaluation", encoding="utf-8")
+
+    rule = _rule(
+        "EVA-001",
+        applicability={"all": [{"capability": "uses_llm"}]},
+        evidence_requirements={
+            "evidence_type": "workflow",
+            "identifiers": ["ci.yml", "ci.yaml", "evaluation.yml", "evaluation.yaml"],
+        },
+    )
+
+    result = RuleEvaluationService().evaluate_all(RuleCatalog([rule]), _collect(tmp_path))[0]
+
+    assert result.status == RuleStatus.PASS
+
+
+def test_weak_ai_wrapper_signals_trigger_needs_semantic_review(tmp_path: Path) -> None:
+    (tmp_path / "gateway.py").write_text(
+        "class ModelGateway:\n"
+        "    def generate(self, prompt_template):\n"
+        "        return prompt_template\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "service.py").write_text(
+        "generation_client = ModelGateway()\n"
+        "system_prompt = 'hello'\n",
+        encoding="utf-8",
+    )
+
+    rule = _rule(
+        "EVA-001",
+        applicability={"all": [{"capability": "uses_llm"}]},
+        evidence_requirements={"evidence_type": "file", "identifiers": ["README.md"]},
+    )
+
+    result = RuleEvaluationService().evaluate_all(RuleCatalog([rule]), _collect(tmp_path))[0]
+
+    assert result.status == RuleStatus.NEEDS_SEMANTIC_REVIEW
+
+
+def test_non_ai_repository_remains_not_applicable_for_ai_rule(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("print('hello')\n", encoding="utf-8")
+
+    rule = _rule(
+        "EVA-001",
+        applicability={"all": [{"capability": "uses_llm"}]},
+        evidence_requirements={"evidence_type": "file", "identifiers": ["README.md"]},
+    )
+
+    result = RuleEvaluationService().evaluate_all(RuleCatalog([rule]), _collect(tmp_path))[0]
+
+    assert result.status == RuleStatus.NOT_APPLICABLE

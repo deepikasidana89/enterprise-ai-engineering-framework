@@ -61,6 +61,43 @@ CODE_PATTERN_REGISTRY: tuple[CodePatternDefinition, ...] = (
         pattern=_compile(r"\b(Anthropic|AsyncAnthropic)\s*\("),
         extensions=(".py",),
     ),
+    CodePatternDefinition(
+        identifier="llm_provider_api_call",
+        category="llm",
+        description="LLM provider API invocation detected",
+        pattern=_compile(
+            r"\b(chat\.completions\.create|responses\.create|messages\.create|generate_content|invoke_model|embeddings\.create)\s*\("
+        ),
+        extensions=(".py", ".js", ".ts", ".tsx"),
+    ),
+    CodePatternDefinition(
+        identifier="ai_gateway_usage",
+        category="llm_context",
+        description="Internal AI gateway/client abstraction usage detected",
+        pattern=_compile(r"\b(model_gateway|llm_gateway|ai_client|inference_client|generation_client)\b"),
+        extensions=(".py", ".js", ".ts", ".tsx", ".java", ".kt", ".go", ".cs"),
+    ),
+    CodePatternDefinition(
+        identifier="model_config_usage",
+        category="llm_context",
+        description="Model configuration parameters detected",
+        pattern=_compile(r"\b(model\s*=|model_name\s*=|deployment_name\s*=|temperature\s*=|embedding_model\s*=|llm\s*=)"),
+        extensions=(".py", ".js", ".ts", ".tsx"),
+    ),
+    CodePatternDefinition(
+        identifier="prompt_template_usage",
+        category="llm_context",
+        description="Prompt template artifacts detected in code",
+        pattern=_compile(r"\b(system_prompt|prompt_template|few_shot)\b"),
+        extensions=(".py", ".js", ".ts", ".tsx", ".java", ".kt"),
+    ),
+    CodePatternDefinition(
+        identifier="vector_retrieval_usage",
+        category="llm_context",
+        description="Vector retrieval related construct detected",
+        pattern=_compile(r"\b(vectorstore|vector_store|faiss|chroma|pinecone|weaviate|milvus|pgvector|embedding)\b"),
+        extensions=(".py", ".js", ".ts", ".tsx", ".java", ".kt", ".go"),
+    ),
 
     # Retry and resilience
     CodePatternDefinition(

@@ -18,6 +18,8 @@ class CategoryScoreDetail:
     earned_weight: int
     possible_weight: int
     percentage: float
+    score: float | None
+    assessment_status: str
     total_rules: int
     passed_rules: int
     failed_rules: int
@@ -27,6 +29,7 @@ class CategoryScoreDetail:
     error_rules: int
     critical_failures: int
     high_failures: int
+    needs_semantic_review_rules: int = 0
 
 
 @dataclass(frozen=True)
@@ -44,6 +47,7 @@ class TierScoreDetail:
     error_rules: int
     critical_failures: int
     high_failures: int
+    needs_semantic_review_rules: int = 0
 
 
 @dataclass(frozen=True)
@@ -56,7 +60,7 @@ class AssessmentCoverage:
 @dataclass(frozen=True)
 class ReadinessScore:
     overall_score: float
-    category_scores: dict[str, float]
+    category_scores: dict[str, float | None]
     total_rules: int
     passed_rules: int
     failed_rules: int
@@ -66,6 +70,7 @@ class ReadinessScore:
     critical_failures: int
     high_failures: int
     manual_review_rules: int = 0
+    needs_semantic_review_rules: int = 0
     summary: dict[str, object] = field(default_factory=dict)
     production_readiness: ProductionReadiness = ProductionReadiness.NOT_READY
     category_details: dict[str, CategoryScoreDetail] = field(default_factory=dict)

@@ -394,6 +394,27 @@ def test_evaluate_command_show_evidence(tmp_path: Path) -> None:
     assert "matched: README.md (README.md)" in result.stdout
 
 
+def test_evaluate_command_explain_shows_applicability(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(_evaluation_rules_yaml(), encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "evaluate",
+            str(tmp_path),
+            "--rules-path",
+            str(rules_dir),
+            "--explain",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "applicability: TRUE" in result.stdout
+
+
 def test_score_command_hundred_percent_repository(tmp_path: Path) -> None:
     (tmp_path / "README.md").write_text("readme", encoding="utf-8")
     (tmp_path / "SECURITY.md").write_text("security", encoding="utf-8")
@@ -444,6 +465,60 @@ def test_score_command_mixed_repository(tmp_path: Path) -> None:
     assert "READY_WITH_WARNINGS" in result.stdout
     assert "Passed: 2" in result.stdout
     assert "Failed: 1" in result.stdout
+
+
+def test_score_command_displays_not_assessed_category_as_na(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text("readme", encoding="utf-8")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    (rules_dir / "rules.yaml").write_text(
+        "\n".join(
+            [
+                "rules:",
+                "  - id: GOV-001",
+                "    title: Readme exists",
+                "    description: Repository has readme",
+                "    category: governance",
+                "    severity: high",
+                "    version: \"1.0\"",
+                "    enabled: true",
+                "    applicability: {always: true}",
+                "    rationale: why",
+                "    recommendation: do",
+                "    tags: []",
+                "    references: []",
+                "    evidence_requirements:",
+                "      evidence_type: file",
+                "      identifiers: [README.md]",
+                "    metadata: {}",
+                "",
+                "  - id: EVA-001",
+                "    title: Eval applies only to LLM repos",
+                "    description: Eval rule",
+                "    category: evaluation",
+                "    severity: high",
+                "    version: \"1.0\"",
+                "    enabled: true",
+                "    applicability:",
+                "      all:",
+                "        - capability: uses_llm",
+                "    rationale: why",
+                "    recommendation: do",
+                "    tags: []",
+                "    references: []",
+                "    evidence_requirements:",
+                "      evidence_type: file",
+                "      identifiers: [README.md]",
+                "    metadata: {}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["score", str(tmp_path), "--rules-path", str(rules_dir)])
+
+    assert result.exit_code == 0
+    assert "Evaluation        N/A" in result.stdout
 
 
 def test_report_command_console_output(tmp_path: Path, monkeypatch) -> None:

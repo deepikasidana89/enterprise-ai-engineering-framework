@@ -446,3 +446,56 @@ def test_category_with_only_manual_review_has_no_scored_weight() -> None:
     assert score.category_details["security"].passed_rules == 0
     assert score.category_details["security"].failed_rules == 0
     assert score.category_details["security"].manual_review_rules == 2
+
+
+def test_category_with_no_applicable_controls_is_not_assessed() -> None:
+    catalog = RuleCatalog(
+        [
+            _rule("EVA-001", category="evaluation", severity=Severity.HIGH),
+            _rule("EVA-002", category="evaluation", severity=Severity.MEDIUM),
+        ]
+    )
+    results = [
+        _result("EVA-001", RuleStatus.NOT_APPLICABLE),
+        _result("EVA-002", RuleStatus.NOT_APPLICABLE),
+    ]
+
+    score = ScoringService().score(results, catalog)
+
+    assert score.category_scores["evaluation"] is None
+    assert score.category_details["evaluation"].assessment_status == "NOT_ASSESSED"
+
+
+def test_category_with_applicable_controls_all_failed_scores_zero() -> None:
+    catalog = RuleCatalog(
+        [
+            _rule("SEC-001", category="security", severity=Severity.HIGH),
+            _rule("SEC-002", category="security", severity=Severity.MEDIUM),
+        ]
+    )
+    results = [
+        _result("SEC-001", RuleStatus.FAIL),
+        _result("SEC-002", RuleStatus.FAIL),
+    ]
+
+    score = ScoringService().score(results, catalog)
+
+    assert score.category_scores["security"] == 0.0
+    assert score.category_details["security"].assessment_status == "ASSESSED"
+
+
+def test_category_with_mixed_pass_fail_uses_weighted_formula() -> None:
+    catalog = RuleCatalog(
+        [
+            _rule("REL-001", category="reliability", severity=Severity.HIGH),
+            _rule("REL-002", category="reliability", severity=Severity.MEDIUM),
+        ]
+    )
+    results = [
+        _result("REL-001", RuleStatus.PASS),
+        _result("REL-002", RuleStatus.FAIL),
+    ]
+
+    score = ScoringService().score(results, catalog)
+
+    assert score.category_scores["reliability"] == 63.6

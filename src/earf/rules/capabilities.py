@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 
 from ..dependency_normalization import normalize_dependency_identifier
 from ..evidence import EvidenceRepository
@@ -20,6 +21,11 @@ LLM_DEPENDENCIES = {
     "langchain",
     "langgraph",
     "semantic-kernel",
+    "google-genai",
+    "sentence-transformers",
+    "boto3",
+    "botocore",
+    "azure-ai-openai",
 }
 
 LLM_PROVIDER_CODE_PATTERNS = {
@@ -27,7 +33,28 @@ LLM_PROVIDER_CODE_PATTERNS = {
     "openai_client_construct",
     "langchain_chat_provider_construct",
     "anthropic_client_construct",
+    "llm_provider_api_call",
 }
+
+WEAK_LLM_DEPENDENCIES = {
+    "cohere",
+    "huggingface-hub",
+    "onnxruntime",
+    "torch",
+}
+
+WEAK_LLM_CODE_PATTERNS = {
+    "ai_gateway_usage",
+    "model_config_usage",
+    "prompt_template_usage",
+    "vector_retrieval_usage",
+}
+
+
+class CapabilityConfidence(Enum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
 
 
 @dataclass(frozen=True)
@@ -36,12 +63,15 @@ class CapabilityDetection:
     detected: bool
     reason: str
     evidence: list[Evidence]
+    uncertain: bool = False
+    confidence: CapabilityConfidence = CapabilityConfidence.LOW
 
 
 class RepositoryCapabilityDetector:
     """Deterministic capability detector based on collected repository evidence."""
 
     _SUPPORTED_CAPABILITIES = {
+        "uses_ai",
         "uses_llm",
         "uses_rag",
         "uses_agents",
@@ -51,6 +81,8 @@ class RepositoryCapabilityDetector:
 
     _LLM_DEPENDENCIES = LLM_DEPENDENCIES
     _LLM_PROVIDER_CODE_PATTERNS = LLM_PROVIDER_CODE_PATTERNS
+    _WEAK_LLM_DEPENDENCIES = WEAK_LLM_DEPENDENCIES
+    _WEAK_LLM_CODE_PATTERNS = WEAK_LLM_CODE_PATTERNS
 
     _RAG_FRAMEWORK_DEPENDENCIES = {
         "langchain",
@@ -132,17 +164,43 @@ class RepositoryCapabilityDetector:
         return detection
 
     def _detect_uncached(self, capability: str) -> CapabilityDetection:
-        if capability == "uses_llm":
+        if capability in {"uses_llm", "uses_ai"}:
             dependency_hits = self._dependency_matches(self._LLM_DEPENDENCIES)
             provider_pattern_hits = self._code_pattern_matches(self._LLM_PROVIDER_CODE_PATTERNS)
-            evidence = self._dedupe(dependency_hits + provider_pattern_hits)
-            if evidence:
+            strong_evidence = self._dedupe(dependency_hits + provider_pattern_hits)
+            if strong_evidence:
+                confidence = (
+                    CapabilityConfidence.HIGH
+                    if len(strong_evidence) > 1
+                    else CapabilityConfidence.MEDIUM
+                )
                 return CapabilityDetection(
                     name=capability,
                     detected=True,
                     reason="LLM capability detected from dependency and/or provider implementation evidence.",
-                    evidence=evidence,
+                    evidence=strong_evidence,
+                    confidence=confidence,
                 )
+
+            weak_dependency_hits = self._dependency_matches(self._WEAK_LLM_DEPENDENCIES)
+            weak_pattern_hits = self._code_pattern_matches(self._WEAK_LLM_CODE_PATTERNS)
+            weak_prompt_artifacts = self._prompt_artifact_matches()
+            weak_evidence = self._dedupe(
+                weak_dependency_hits + weak_pattern_hits + weak_prompt_artifacts
+            )
+            if len(weak_evidence) >= 2:
+                return CapabilityDetection(
+                    name=capability,
+                    detected=False,
+                    uncertain=True,
+                    confidence=CapabilityConfidence.LOW,
+                    reason=(
+                        "Weak AI-related signals were detected, but deterministic evidence "
+                        "is insufficient to establish LLM capability confidently."
+                    ),
+                    evidence=weak_evidence,
+                )
+
             return CapabilityDetection(
                 name=capability,
                 detected=False,
@@ -150,6 +208,7 @@ class RepositoryCapabilityDetector:
                     "No supported LLM dependency or provider implementation evidence detected."
                 ),
                 evidence=[],
+                confidence=CapabilityConfidence.LOW,
             )
 
         if capability == "uses_agents":
@@ -174,12 +233,14 @@ class RepositoryCapabilityDetector:
                     detected=True,
                     reason="CI/CD workflow evidence detected.",
                     evidence=workflows,
+                    confidence=CapabilityConfidence.HIGH,
                 )
             return CapabilityDetection(
                 name=capability,
                 detected=False,
                 reason="CI/CD capability evidence was not detected.",
                 evidence=[],
+                confidence=CapabilityConfidence.LOW,
             )
 
         if capability == "uses_rag":
@@ -191,6 +252,7 @@ class RepositoryCapabilityDetector:
                     detected=True,
                     reason="RAG capability evidence detected from framework and vector-store dependencies.",
                     evidence=self._dedupe(rag_framework_hits + vector_hits),
+                    confidence=CapabilityConfidence.HIGH,
                 )
 
             # Conservatively allow well-known integrated RAG frameworks.
@@ -200,6 +262,7 @@ class RepositoryCapabilityDetector:
                     detected=True,
                     reason="RAG capability evidence detected from integrated retrieval framework dependency.",
                     evidence=rag_framework_hits,
+                    confidence=CapabilityConfidence.MEDIUM,
                 )
 
             embedding_hits = self._code_pattern_matches(self._RAG_EMBEDDING_CODE_PATTERNS)
@@ -216,6 +279,7 @@ class RepositoryCapabilityDetector:
                     evidence=self._dedupe(
                         embedding_hits + vector_pattern_hits + retriever_hits
                     ),
+                    confidence=CapabilityConfidence.HIGH,
                 )
 
             return CapabilityDetection(
@@ -223,6 +287,7 @@ class RepositoryCapabilityDetector:
                 detected=False,
                 reason="RAG capability evidence was not detected.",
                 evidence=[],
+                confidence=CapabilityConfidence.LOW,
             )
 
         return CapabilityDetection(
@@ -230,6 +295,7 @@ class RepositoryCapabilityDetector:
             detected=False,
             reason=f"Unsupported capability: {capability}",
             evidence=[],
+            confidence=CapabilityConfidence.LOW,
         )
 
     def _detect_dependency_capability(
@@ -244,6 +310,7 @@ class RepositoryCapabilityDetector:
                 detected=True,
                 reason=f"{capability} capability evidence detected.",
                 evidence=matches,
+                confidence=CapabilityConfidence.MEDIUM,
             )
 
         return CapabilityDetection(
@@ -251,6 +318,7 @@ class RepositoryCapabilityDetector:
             detected=False,
             reason=f"{capability} capability evidence was not detected.",
             evidence=[],
+            confidence=CapabilityConfidence.LOW,
         )
 
     def _detect_dependency_or_code_pattern_capability(
@@ -269,6 +337,7 @@ class RepositoryCapabilityDetector:
                 detected=True,
                 reason=f"{capability} capability evidence detected.",
                 evidence=combined,
+                confidence=CapabilityConfidence.MEDIUM,
             )
 
         return CapabilityDetection(
@@ -276,7 +345,25 @@ class RepositoryCapabilityDetector:
             detected=False,
             reason=f"{capability} capability evidence was not detected.",
             evidence=[],
+            confidence=CapabilityConfidence.LOW,
         )
+
+    def _prompt_artifact_matches(self) -> list[Evidence]:
+        files = self._repository.find(evidence_type=EvidenceType.FILE)
+        weak_hits: list[Evidence] = []
+        weak_tokens = (
+            "prompt",
+            "prompts",
+            "system_prompt",
+            "few_shot",
+            "template",
+        )
+        for item in files:
+            identifier = (item.identifier or "").lower()
+            path = (item.path or "").lower()
+            if any(token in identifier or token in path for token in weak_tokens):
+                weak_hits.append(item)
+        return weak_hits
 
     def _dependency_matches(self, expected_identifiers: set[str]) -> list[Evidence]:
         dependencies = self._repository.find(evidence_type=EvidenceType.DEPENDENCY)

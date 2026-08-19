@@ -38,7 +38,8 @@ def render_summary(payload: dict[str, object]) -> str:
     if isinstance(category_scores, dict) and category_scores:
         for category in sorted(category_scores.keys()):
             score = category_scores.get(category)
-            lines.append(f"- {category}: {score}")
+            score_text = "N/A" if score is None else str(score)
+            lines.append(f"- {category}: {score_text}")
     else:
         lines.append("- None")
 

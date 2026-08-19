@@ -76,19 +76,8 @@ rules:
     version: "1.0"
     enabled: true
     applicability:
-      any:
-        - evidence_type: dependency
-          identifiers:
-            - openai
-            - anthropic
-            - langchain
-            - langgraph
-            - transformers
-            - llama-index
-            - litellm
-            - semantic-kernel
-            - google-generativeai
-            - azure-ai-inference
+      all:
+        - capability: uses_llm
     rationale: Least privilege limits blast radius of compromised workflows.
     failure_message: Least-privilege access control evidence was not detected.
     recommendation: Restrict tool scopes and runtime permissions.

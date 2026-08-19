@@ -23,6 +23,7 @@ class _CategoryAccumulator:
     passed_rules: int = 0
     failed_rules: int = 0
     manual_review_rules: int = 0
+    needs_semantic_review_rules: int = 0
     not_applicable_rules: int = 0
     disabled_rules: int = 0
     error_rules: int = 0
@@ -54,6 +55,7 @@ class ScoringService:
         passed_rules = 0
         failed_rules = 0
         manual_review_rules = 0
+        needs_semantic_review_rules = 0
         not_applicable_rules = 0
         disabled_rules = 0
         error_rules = 0
@@ -121,6 +123,10 @@ class ScoringService:
                 coverage_applicable += 1
                 category_state.manual_review_rules += 1
                 tier_state.manual_review_rules += 1
+            elif status == RuleStatus.NEEDS_SEMANTIC_REVIEW:
+                needs_semantic_review_rules += 1
+                category_state.needs_semantic_review_rules += 1
+                tier_state.needs_semantic_review_rules += 1
             elif status == RuleStatus.ERROR:
                 error_rules += 1
                 coverage_applicable += 1
@@ -142,7 +148,7 @@ class ScoringService:
         category_details = self._build_category_details(category_accumulators)
         tier_details = self._build_tier_details(tier_accumulators)
         category_scores = {
-            category: detail.percentage for category, detail in category_details.items()
+            category: detail.score for category, detail in category_details.items()
         }
 
         core_detail = tier_details[ControlTier.CORE.value]
@@ -174,6 +180,7 @@ class ScoringService:
             "critical_failures": critical_failures,
             "high_failures": high_failures,
             "manual_review_rules": manual_review_rules,
+            "needs_semantic_review_rules": needs_semantic_review_rules,
             "unknown_result_count": unknown_result_count,
             "core_readiness_score": core_readiness_score,
             "advanced_controls_score": advanced_controls_score,
@@ -193,6 +200,7 @@ class ScoringService:
             passed_rules=passed_rules,
             failed_rules=failed_rules,
             manual_review_rules=manual_review_rules,
+            needs_semantic_review_rules=needs_semantic_review_rules,
             not_applicable_rules=not_applicable_rules,
             disabled_rules=disabled_rules,
             error_rules=error_rules,
@@ -216,10 +224,21 @@ class ScoringService:
                 earned_weight=state.earned_weight,
                 possible_weight=state.possible_weight,
                 percentage=self._percentage(state.earned_weight, state.possible_weight),
+                score=(
+                    self._percentage(state.earned_weight, state.possible_weight)
+                    if state.possible_weight > 0
+                    else None
+                ),
+                assessment_status=(
+                    "ASSESSED"
+                    if state.possible_weight > 0
+                    else "NOT_ASSESSED"
+                ),
                 total_rules=state.total_rules,
                 passed_rules=state.passed_rules,
                 failed_rules=state.failed_rules,
                 manual_review_rules=state.manual_review_rules,
+                needs_semantic_review_rules=state.needs_semantic_review_rules,
                 not_applicable_rules=state.not_applicable_rules,
                 disabled_rules=state.disabled_rules,
                 error_rules=state.error_rules,
@@ -244,6 +263,7 @@ class ScoringService:
                 passed_rules=state.passed_rules,
                 failed_rules=state.failed_rules,
                 manual_review_rules=state.manual_review_rules,
+                needs_semantic_review_rules=state.needs_semantic_review_rules,
                 not_applicable_rules=state.not_applicable_rules,
                 disabled_rules=state.disabled_rules,
                 error_rules=state.error_rules,
@@ -287,7 +307,10 @@ class ScoringService:
     ) -> list[str]:
         ranked = sorted(
             category_details.values(),
-            key=lambda item: (-item.percentage, item.category),
+            key=lambda item: (
+                -(item.score if item.score is not None else -1.0),
+                item.category,
+            ),
         )
         return [item.category for item in ranked]
 
@@ -298,6 +321,9 @@ class ScoringService:
     ) -> list[str]:
         ranked = sorted(
             category_details.values(),
-            key=lambda item: (item.percentage, item.category),
+            key=lambda item: (
+                item.score if item.score is not None else 101.0,
+                item.category,
+            ),
         )
         return [item.category for item in ranked][:limit]

@@ -88,6 +88,7 @@ def test_rule_status_values() -> None:
     assert RuleStatus.PASS.value == "pass"
     assert RuleStatus.FAIL.value == "fail"
     assert RuleStatus.MANUAL_REVIEW.value == "manual_review"
+    assert RuleStatus.NEEDS_SEMANTIC_REVIEW.value == "needs_semantic_review"
     assert RuleStatus.NOT_APPLICABLE.value == "not_applicable"
     assert RuleStatus.DISABLED.value == "disabled"
     assert RuleStatus.ERROR.value == "error"
@@ -253,6 +254,21 @@ def test_all_operator_fails_when_one_missing() -> None:
     assert result.status == RuleStatus.FAIL
 
 
+def test_uncertain_llm_capability_returns_needs_semantic_review() -> None:
+    repo = EvidenceRepository()
+    repo.add(_evidence(EvidenceType.CODE_PATTERN, "ai_gateway_usage", path="service.py"))
+    repo.add(_evidence(EvidenceType.CODE_PATTERN, "prompt_template_usage", path="service.py"))
+
+    rule = _rule(
+        rule_id="EVA-001",
+        applicability={"all": [{"capability": "uses_llm"}]},
+        evidence_requirements={"evidence_type": "file", "identifiers": ["README.md"]},
+    )
+
+    result = RuleEvaluator().evaluate(rule, repo)
+
+    assert result.status == RuleStatus.NEEDS_SEMANTIC_REVIEW
+    assert "applicability_reason" in result.metadata
 def test_identifier_alternatives_match_any() -> None:
     repo = EvidenceRepository()
     repo.add(_evidence(EvidenceType.FILE, "OWNERS"))

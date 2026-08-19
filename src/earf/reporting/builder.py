@@ -36,6 +36,7 @@ class ReportBuilder:
         core_gaps: list[dict[str, object]] = []
         advanced_opportunities: list[dict[str, object]] = []
         manual_review_required: list[dict[str, object]] = []
+        semantic_review_required: list[dict[str, object]] = []
         passed_controls: list[dict[str, object]] = []
 
         for result in ordered_results:
@@ -55,7 +56,15 @@ class ReportBuilder:
                     "tier": tier,
                     "status": result.status.name,
                     "message": result.message,
-                    "failure_message": result.message if result.status in {RuleStatus.FAIL, RuleStatus.MANUAL_REVIEW} else "",
+                    "failure_message": (
+                        result.message
+                        if result.status in {
+                            RuleStatus.FAIL,
+                            RuleStatus.MANUAL_REVIEW,
+                            RuleStatus.NEEDS_SEMANTIC_REVIEW,
+                        }
+                        else ""
+                    ),
                     "applicability_reason": str(result.metadata.get("applicability_reason", "")),
                     "recommendation": recommendation,
                     "error": result.error,
@@ -86,6 +95,24 @@ class ReportBuilder:
                         "status": result.status.name,
                         "failure_message": result.message,
                         "recommendation": rule.recommendation,
+                        "missing_requirements": list(result.missing_requirements),
+                    }
+                )
+                continue
+
+            if result.status == RuleStatus.NEEDS_SEMANTIC_REVIEW:
+                semantic_review_required.append(
+                    {
+                        "rule_id": rule.id,
+                        "title": rule.title,
+                        "severity": rule.severity.name,
+                        "status": result.status.name,
+                        "failure_message": result.message,
+                        "recommendation": rule.recommendation,
+                        "applicability_reason": str(result.metadata.get("applicability_reason", "")),
+                        "applicability_uncertain_reasons": list(
+                            result.metadata.get("applicability_uncertain_reasons", [])
+                        ),
                         "missing_requirements": list(result.missing_requirements),
                     }
                 )
@@ -139,6 +166,7 @@ class ReportBuilder:
                 "core_gaps": core_gaps,
                 "advanced_opportunities": advanced_opportunities,
                 "manual_review_required": manual_review_required,
+                "semantic_review_required": semantic_review_required,
                 "passed_controls": passed_controls,
             },
             analysis_result=analysis_result,

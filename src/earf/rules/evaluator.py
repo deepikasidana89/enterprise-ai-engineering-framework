@@ -29,6 +29,8 @@ class RequirementMatch:
     matched: bool
     matched_evidence: list[Evidence]
     missing_requirements: list[str]
+    uncertain: bool = False
+    uncertain_reasons: list[str] | None = None
 
 
 class RuleEvaluator:
@@ -49,6 +51,30 @@ class RuleEvaluator:
                 rule,
                 evidence_repository,
             )
+            if applicability_match.uncertain:
+                uncertain_reasons = applicability_match.uncertain_reasons or [
+                    "Deterministic applicability could not be established."
+                ]
+                return RuleResult(
+                    rule_id=rule.id,
+                    status=RuleStatus.NEEDS_SEMANTIC_REVIEW,
+                    message="Deterministic applicability is inconclusive.",
+                    matched_evidence=applicability_match.matched_evidence,
+                    metadata={
+                        "applicability_reason": uncertain_reasons[0],
+                        "applicability_uncertain_reasons": uncertain_reasons,
+                        "applicability_evidence": [
+                            {
+                                "evidence_type": item.evidence_type.value,
+                                "identifier": item.identifier,
+                                "path": item.path,
+                                "location": item.location,
+                            }
+                            for item in self._deduplicate(applicability_match.matched_evidence)
+                        ],
+                    },
+                )
+
             if not applicability_match.matched:
                 applicability_reason = (
                     applicability_match.missing_requirements[0]
@@ -248,6 +274,15 @@ class RuleEvaluator:
                     missing_requirements=[],
                 )
 
+            if detected.uncertain:
+                return RequirementMatch(
+                    matched=False,
+                    matched_evidence=detected.evidence,
+                    missing_requirements=[],
+                    uncertain=True,
+                    uncertain_reasons=[detected.reason],
+                )
+
             return RequirementMatch(
                 matched=False,
                 matched_evidence=[],
@@ -272,6 +307,14 @@ class RuleEvaluator:
                 evidence_repository,
                 capability_detector,
             )
+            if child_match.uncertain:
+                return RequirementMatch(
+                    matched=False,
+                    matched_evidence=child_match.matched_evidence,
+                    missing_requirements=[],
+                    uncertain=True,
+                    uncertain_reasons=child_match.uncertain_reasons,
+                )
             if child_match.matched:
                 return RequirementMatch(
                     matched=False,
@@ -318,6 +361,27 @@ class RuleEvaluator:
                             matched_evidence=child_match.matched_evidence,
                             missing_requirements=[],
                         )
+
+                uncertain_reasons = [
+                    reason
+                    for child in child_matches
+                    if child.uncertain
+                    for reason in (child.uncertain_reasons or [])
+                ]
+                if uncertain_reasons:
+                    matched_evidence = [
+                        item
+                        for child in child_matches
+                        for item in child.matched_evidence
+                    ]
+                    return RequirementMatch(
+                        matched=False,
+                        matched_evidence=matched_evidence,
+                        missing_requirements=[],
+                        uncertain=True,
+                        uncertain_reasons=uncertain_reasons,
+                    )
+
                 return RequirementMatch(
                     matched=False,
                     matched_evidence=[],
@@ -330,9 +394,23 @@ class RuleEvaluator:
 
             matched_evidence: list[Evidence] = []
             missing_requirements: list[str] = []
+            uncertain_reasons: list[str] = []
             for child_match in child_matches:
                 matched_evidence.extend(child_match.matched_evidence)
                 missing_requirements.extend(child_match.missing_requirements)
+
+                if child_match.uncertain:
+                    uncertain_reasons.extend(child_match.uncertain_reasons or [])
+
+            if uncertain_reasons and not missing_requirements:
+                return RequirementMatch(
+                    matched=False,
+                    matched_evidence=matched_evidence,
+                    missing_requirements=[],
+                    uncertain=True,
+                    uncertain_reasons=uncertain_reasons,
+                )
+
             return RequirementMatch(
                 matched=not missing_requirements,
                 matched_evidence=matched_evidence,
