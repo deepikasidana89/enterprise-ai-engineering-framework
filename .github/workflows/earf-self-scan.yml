@@ -1,0 +1,28 @@
+name: EARF Self Scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  self-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run EARF composite action
+        uses: ./
+        with:
+          path: .
+
+      - name: Upload EARF reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: earf-self-scan-reports
+          path: |
+            earf-report.json
+            EARF_REPORT.md

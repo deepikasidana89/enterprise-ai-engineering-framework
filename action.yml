@@ -1,0 +1,104 @@
+name: EARF Enterprise AI Readiness Scan
+description: Run EARF against a repository and generate JSON and Markdown readiness reports.
+
+inputs:
+  path:
+    description: Repository path to scan
+    required: false
+    default: "."
+  rules-path:
+    description: Optional custom rules file or directory
+    required: false
+    default: ""
+  fail-on-not-ready:
+    description: Fail the workflow when production status is NOT_READY
+    required: false
+    default: "false"
+
+outputs:
+  overall-score:
+    description: Overall readiness score from earf-report.json
+    value: ${{ steps.read-report.outputs.overall_score }}
+  production-status:
+    description: Production readiness status from earf-report.json
+    value: ${{ steps.read-report.outputs.production_status }}
+
+runs:
+  using: composite
+  steps:
+    - name: Verify Python is available
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 --version
+
+    - name: Install EARF from action repository
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 -m pip install --upgrade pip
+        python3 -m pip install "${GITHUB_ACTION_PATH}"
+
+    - name: Generate EARF JSON report
+      shell: bash
+      run: |
+        set -euo pipefail
+        scan_path="${{ inputs.path }}"
+        rules_path="${{ inputs['rules-path'] }}"
+
+        args=("$scan_path")
+        if [[ -n "$rules_path" ]]; then
+          args+=(--rules-path "$rules_path")
+        fi
+
+        earf report "${args[@]}" --format json --output earf-report.json
+
+    - name: Generate EARF Markdown report
+      shell: bash
+      run: |
+        set -euo pipefail
+        scan_path="${{ inputs.path }}"
+        rules_path="${{ inputs['rules-path'] }}"
+
+        args=("$scan_path")
+        if [[ -n "$rules_path" ]]; then
+          args+=(--rules-path "$rules_path")
+        fi
+
+        earf report "${args[@]}" --format markdown --output EARF_REPORT.md
+
+    - name: Print concise EARF summary
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 -m earf.github_action_summary --report earf-report.json
+
+    - name: Read EARF status
+      id: read-report
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 - <<'PY'
+        import json
+      import os
+
+        with open("earf-report.json", "r", encoding="utf-8") as handle:
+            report = json.load(handle)
+
+      output_path = os.environ["GITHUB_OUTPUT"]
+      with open(output_path, "a", encoding="utf-8") as out:
+            out.write(f"overall_score={report.get('overall_score', '')}\n")
+            out.write(f"production_status={report.get('production_status', '')}\n")
+        PY
+
+    - name: Optionally fail when NOT_READY
+      shell: bash
+      run: |
+        set -euo pipefail
+        fail_on_not_ready="${{ inputs['fail-on-not-ready'] }}"
+        status="${{ steps.read-report.outputs.production_status }}"
+
+        if [[ "$fail_on_not_ready" == "true" && "$status" == "NOT_READY" ]]; then
+          echo "EARF production status is NOT_READY and fail-on-not-ready=true."
+          exit 1
+        fi

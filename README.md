@@ -46,6 +46,61 @@ Install locally:
 pip install -e .
 ```
 
+## Run EARF in GitHub Actions
+
+Minimal workflow:
+
+```yaml
+name: EARF AI Readiness
+
+on:
+	pull_request:
+	push:
+		branches: [main]
+
+jobs:
+	earf:
+		runs-on: ubuntu-latest
+
+		steps:
+			- uses: actions/checkout@v4
+
+			- name: Run EARF
+				uses: deepikasidana89/enterprise-ai-engineering-framework@v1
+```
+
+Advanced example with optional inputs:
+
+```yaml
+name: EARF AI Readiness
+
+on:
+	pull_request:
+	push:
+		branches: [main]
+
+jobs:
+	earf:
+		runs-on: ubuntu-latest
+
+		steps:
+			- uses: actions/checkout@v4
+
+			- name: Run EARF
+				uses: deepikasidana89/enterprise-ai-engineering-framework@v1
+				with:
+					path: .
+					rules-path: .github/earf/rules
+					fail-on-not-ready: true
+```
+
+The action generates:
+
+- `earf-report.json`
+- `EARF_REPORT.md`
+
+EARF V1 provides engineering readiness evidence. It does not constitute certification, security assurance, or compliance approval.
+
 Run EARF against an AI project:
 
 ```bash
