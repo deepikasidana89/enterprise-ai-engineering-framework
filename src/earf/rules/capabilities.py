@@ -65,6 +65,7 @@ class CapabilityDetection:
     evidence: list[Evidence]
     uncertain: bool = False
     confidence: CapabilityConfidence = CapabilityConfidence.LOW
+    ignored_weak_evidence: list[Evidence] | None = None
 
 
 class RepositoryCapabilityDetector:
@@ -167,38 +168,70 @@ class RepositoryCapabilityDetector:
         if capability in {"uses_llm", "uses_ai"}:
             dependency_hits = self._dependency_matches(self._LLM_DEPENDENCIES)
             provider_pattern_hits = self._code_pattern_matches(self._LLM_PROVIDER_CODE_PATTERNS)
-            strong_evidence = self._dedupe(dependency_hits + provider_pattern_hits)
-            if strong_evidence:
-                confidence = (
-                    CapabilityConfidence.HIGH
-                    if len(strong_evidence) > 1
-                    else CapabilityConfidence.MEDIUM
+            import_hits = self._signal_matches("ai.provider_import")
+            config_hits = self._signal_matches("ai.provider_config", "ai.model_config")
+            runtime_hits = self._signal_matches("ai.runtime_call")
+            gateway_hits = self._signal_matches("ai.gateway_usage")
+
+            if runtime_hits:
+                return CapabilityDetection(
+                    name=capability,
+                    detected=True,
+                    reason="LLM capability detected from runtime provider API invocation evidence.",
+                    evidence=self._dedupe(runtime_hits + config_hits + import_hits),
+                    confidence=CapabilityConfidence.HIGH,
+                )
+
+            corroborated_moderate = (
+                (import_hits and config_hits)
+                or (gateway_hits and config_hits)
+                or (dependency_hits and (import_hits or gateway_hits or provider_pattern_hits or config_hits))
+                or (provider_pattern_hits and config_hits)
+            )
+            if corroborated_moderate:
+                strong_evidence = self._dedupe(
+                    dependency_hits
+                    + provider_pattern_hits
+                    + import_hits
+                    + config_hits
+                    + gateway_hits
                 )
                 return CapabilityDetection(
                     name=capability,
                     detected=True,
-                    reason="LLM capability detected from dependency and/or provider implementation evidence.",
+                    reason="LLM capability detected from corroborated import/config/dependency implementation evidence.",
                     evidence=strong_evidence,
-                    confidence=confidence,
+                    confidence=CapabilityConfidence.MEDIUM,
                 )
 
             weak_dependency_hits = self._dependency_matches(self._WEAK_LLM_DEPENDENCIES)
             weak_pattern_hits = self._code_pattern_matches(self._WEAK_LLM_CODE_PATTERNS)
             weak_prompt_artifacts = self._prompt_artifact_matches()
+            weak_docs = self._repository.find(evidence_type=EvidenceType.DOCUMENTATION)
+            weak_comments = self._repository.find(evidence_type=EvidenceType.COMMENT)
+            weak_filename = self._repository.find(evidence_type=EvidenceType.FILENAME)
             weak_evidence = self._dedupe(
-                weak_dependency_hits + weak_pattern_hits + weak_prompt_artifacts
+                weak_dependency_hits
+                + weak_pattern_hits
+                + weak_prompt_artifacts
+                + weak_docs
+                + weak_comments
+                + weak_filename
             )
-            if len(weak_evidence) >= 2:
+            moderate_but_inconclusive = self._dedupe(import_hits + config_hits + gateway_hits + provider_pattern_hits)
+
+            if weak_evidence or moderate_but_inconclusive or dependency_hits:
                 return CapabilityDetection(
                     name=capability,
                     detected=False,
                     uncertain=True,
                     confidence=CapabilityConfidence.LOW,
                     reason=(
-                        "Weak AI-related signals were detected, but deterministic evidence "
+                        "Weak or partially corroborated AI signals were detected, but deterministic evidence "
                         "is insufficient to establish LLM capability confidently."
                     ),
-                    evidence=weak_evidence,
+                    evidence=self._dedupe(moderate_but_inconclusive + dependency_hits),
+                    ignored_weak_evidence=weak_evidence,
                 )
 
             return CapabilityDetection(
@@ -364,6 +397,22 @@ class RepositoryCapabilityDetector:
             if any(token in identifier or token in path for token in weak_tokens):
                 weak_hits.append(item)
         return weak_hits
+
+    def _signal_matches(self, *identifiers: str) -> list[Evidence]:
+        expected = {value.lower() for value in identifiers}
+        evidence_types = (
+            EvidenceType.IMPORT,
+            EvidenceType.RUNTIME_CALL,
+            EvidenceType.IMPLEMENTATION,
+            EvidenceType.CONFIGURATION,
+            EvidenceType.TEST,
+        )
+        items: list[Evidence] = []
+        for evidence_type in evidence_types:
+            for item in self._repository.find(evidence_type=evidence_type):
+                if item.identifier.lower() in expected:
+                    items.append(item)
+        return items
 
     def _dependency_matches(self, expected_identifiers: set[str]) -> list[Evidence]:
         dependencies = self._repository.find(evidence_type=EvidenceType.DEPENDENCY)

@@ -17,6 +17,9 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: workflow
-          identifiers: [ci.yml, ci.yaml, evaluation.yml, evaluation.yaml]
+        - all:
+            - evidence_type: workflow
+            - evidence_type: test
+              source: signal
+              identifiers: [eva.runtime_evaluation]
     metadata: {}

@@ -87,6 +87,7 @@ rules:
       all:
         - evidence_type: file
           identifiers: [CODEOWNERS]
-        - evidence_type: workflow
-          identifiers: [ci.yml, ci.yaml]
+        - evidence_type: configuration
+          source: signal
+          identifiers: [sec.workflow_least_privilege]
     metadata: {}

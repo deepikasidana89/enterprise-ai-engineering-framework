@@ -17,12 +17,11 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: dependency
-          path: requirements.txt
-          identifiers: [httpx, requests, openai, anthropic]
-        - evidence_type: dependency
-          path: pyproject.toml
-          identifiers: [httpx, requests, openai, anthropic]
+        - evidence_type: implementation
+          source: signal
+          identifiers: [rel.timeout_runtime]
+        - evidence_type: code_pattern
+          identifiers: [llm_provider_api_call]
     metadata: {}
 
   - id: REL-002
@@ -43,12 +42,9 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: dependency
-          path: requirements.txt
-          identifiers: [tenacity, backoff]
-        - evidence_type: dependency
-          path: pyproject.toml
-          identifiers: [tenacity, backoff]
+        - evidence_type: implementation
+          source: signal
+          identifiers: [rel.retry_runtime]
         - evidence_type: code_pattern
           identifiers:
             - retry_annotation

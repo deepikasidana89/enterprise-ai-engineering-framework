@@ -17,24 +17,28 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: dependency
-          path: requirements.txt
-          identifiers:
-            - openai
-            - anthropic
-            - google-generativeai
-            - azure-ai-inference
-            - litellm
-            - langchain
-        - evidence_type: dependency
-          path: pyproject.toml
-          identifiers:
-            - openai
-            - anthropic
-            - google-generativeai
-            - azure-ai-inference
-            - litellm
-            - langchain
+        - evidence_type: runtime_call
+          source: signal
+          identifiers: [ai.runtime_call]
+        - all:
+            - evidence_type: import
+              source: signal
+              identifiers: [ai.provider_import]
+            - evidence_type: configuration
+              source: signal
+              identifiers: [ai.provider_config, ai.model_config]
+        - all:
+            - evidence_type: dependency
+              identifiers:
+                - openai
+                - anthropic
+                - google-generativeai
+                - azure-ai-inference
+                - litellm
+                - langchain
+            - evidence_type: implementation
+              source: signal
+              identifiers: [ai.gateway_usage]
     metadata: {}
 
   - id: MOD-002
@@ -55,8 +59,9 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: dependency
-          path: requirements.txt
-        - evidence_type: dependency
-          path: pyproject.toml
+        - evidence_type: configuration
+          source: signal
+          identifiers: [ai.model_config]
+        - evidence_type: code_pattern
+          identifiers: [model_config_usage]
     metadata: {}

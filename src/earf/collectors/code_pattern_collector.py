@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
 import re
 
 from .base import EvidenceCollector
 from .code_pattern_registry import CODE_PATTERN_REGISTRY, CodePatternDefinition
+from .workspace_index import ensure_workspace_index
 from ..models import Evidence, EvidenceType, RepositoryContext
 
 
@@ -13,50 +13,40 @@ class CodePatternCollector(EvidenceCollector):
 
     name = "code_pattern"
 
-    _MAX_FILE_BYTES = 1_000_000
-    _IGNORED_DIRS = {
-        ".git",
-        "node_modules",
-        "venv",
-        ".venv",
-        "dist",
-        "build",
-        "target",
-        "coverage",
-        "__pycache__",
-        ".idea",
-        ".vscode",
-    }
-    _TEST_LIKE_DIRS = {
-        "tests",
-        "test",
-        "__tests__",
-        "fixtures",
-        "mocks",
-    }
     _SUPPORTED_EXTENSIONS = {
         ".py",
         ".java",
         ".kt",
         ".js",
+        ".jsx",
         ".ts",
         ".tsx",
         ".go",
         ".cs",
+        ".rb",
+        ".rs",
     }
 
     def collect(self, context: RepositoryContext) -> list[Evidence]:
-        root = context.root_path
+        index = ensure_workspace_index(context)
+
         evidence_items: list[Evidence] = []
 
-        for file_path in self._iter_candidate_files(root):
-            rel_path = str(file_path.relative_to(root))
-            content = self._read_text(file_path)
+        for indexed in index.files:
+            file_path = indexed.path
+            rel_path = indexed.relative_path
+            if indexed.is_test_like:
+                continue
+
+            extension = file_path.suffix.lower()
+            if extension not in self._SUPPORTED_EXTENSIONS:
+                continue
+
+            content = indexed.text
             if content is None:
                 continue
 
             cleaned = self._strip_comments(content, file_path.suffix.lower())
-            extension = file_path.suffix.lower()
             for definition in CODE_PATTERN_REGISTRY:
                 if extension not in definition.extensions:
                     continue
@@ -89,40 +79,6 @@ class CodePatternCollector(EvidenceCollector):
                 )
 
         return sorted(evidence_items, key=lambda item: (item.identifier, item.path or "", item.location or ""))
-
-    def _iter_candidate_files(self, root: Path) -> list[Path]:
-        candidates: list[Path] = []
-        for file_path in root.rglob("*"):
-            if not file_path.is_file():
-                continue
-
-            relative = file_path.relative_to(root)
-            if any(part in self._IGNORED_DIRS for part in relative.parts):
-                continue
-            if any(part in self._TEST_LIKE_DIRS for part in relative.parts):
-                continue
-            if file_path.suffix.lower() not in self._SUPPORTED_EXTENSIONS:
-                continue
-
-            try:
-                if file_path.stat().st_size > self._MAX_FILE_BYTES:
-                    continue
-                raw = file_path.read_bytes()
-            except OSError:
-                continue
-
-            if b"\x00" in raw:
-                continue
-
-            candidates.append(file_path)
-
-        return candidates
-
-    def _read_text(self, file_path: Path) -> str | None:
-        try:
-            return file_path.read_text(encoding="utf-8", errors="ignore")
-        except OSError:
-            return None
 
     def _strip_comments(self, content: str, extension: str) -> str:
         if extension == ".py":

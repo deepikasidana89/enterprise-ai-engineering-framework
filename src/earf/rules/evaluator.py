@@ -67,6 +67,8 @@ class RuleEvaluator:
                             {
                                 "evidence_type": item.evidence_type.value,
                                 "identifier": item.identifier,
+                                "source": item.source,
+                                "strength": str(item.metadata.get("strength", "")),
                                 "path": item.path,
                                 "location": item.location,
                             }
@@ -92,6 +94,8 @@ class RuleEvaluator:
                             {
                                 "evidence_type": item.evidence_type.value,
                                 "identifier": item.identifier,
+                                "source": item.source,
+                                "strength": str(item.metadata.get("strength", "")),
                                 "path": item.path,
                                 "location": item.location,
                             }
@@ -268,19 +272,26 @@ class RuleEvaluator:
 
             detected = capability_detector.detect(capability_name)
             if detected.detected:
+                metadata_evidence = list(detected.evidence)
+                metadata_evidence.extend(detected.ignored_weak_evidence or [])
                 return RequirementMatch(
                     matched=True,
-                    matched_evidence=detected.evidence,
+                    matched_evidence=self._deduplicate(metadata_evidence),
                     missing_requirements=[],
                 )
 
             if detected.uncertain:
+                uncertain_reasons = [detected.reason]
+                if detected.ignored_weak_evidence:
+                    uncertain_reasons.append("Weak documentary/comment/file hints were ignored for capability confirmation.")
+                metadata_evidence = list(detected.evidence)
+                metadata_evidence.extend(detected.ignored_weak_evidence or [])
                 return RequirementMatch(
                     matched=False,
-                    matched_evidence=detected.evidence,
+                    matched_evidence=self._deduplicate(metadata_evidence),
                     missing_requirements=[],
                     uncertain=True,
-                    uncertain_reasons=[detected.reason],
+                    uncertain_reasons=uncertain_reasons,
                 )
 
             return RequirementMatch(

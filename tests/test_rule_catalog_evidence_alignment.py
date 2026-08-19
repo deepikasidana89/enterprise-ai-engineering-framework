@@ -8,7 +8,17 @@ from earf.rules.catalog import RuleCatalog
 from earf.rules.evaluation_service import RuleEvaluationService
 from earf.rules.results import RuleStatus
 
-SUPPORTED_RULE_EVIDENCE_TYPES = {"file", "dependency", "workflow", "configuration", "code_pattern"}
+SUPPORTED_RULE_EVIDENCE_TYPES = {
+    "file",
+    "dependency",
+    "workflow",
+    "configuration",
+    "code_pattern",
+    "import",
+    "runtime_call",
+    "implementation",
+    "test",
+}
 
 
 def _rules_dir() -> Path:
@@ -104,7 +114,40 @@ def test_populated_repository_satisfies_all_rules(tmp_path: Path) -> None:
 
     workflows_dir = tmp_path / ".github" / "workflows"
     workflows_dir.mkdir(parents=True)
-    (workflows_dir / "ci.yml").write_text("name: CI", encoding="utf-8")
+    (workflows_dir / "ci.yml").write_text(
+        "name: CI\n"
+        "permissions:\n"
+        "  contents: read\n"
+        "  actions: read\n",
+        encoding="utf-8",
+    )
+
+    (tmp_path / "app.py").write_text(
+        "from openai import OpenAI\n"
+        "from pydantic import BaseModel\n"
+        "from opentelemetry import trace\n"
+        "from tenacity import retry\n"
+        "\n"
+        "class Request(BaseModel):\n"
+        "    prompt: str\n"
+        "\n"
+        "def run_evaluation(output):\n"
+        "    return score_output(output)\n"
+        "\n"
+        "@retry\n"
+        "def ask(prompt):\n"
+        "    tracer = trace.get_tracer(__name__)\n"
+        "    with tracer.start_as_current_span('ask'):\n"
+        "        client = OpenAI()\n"
+        "        return client.responses.create(model='gpt-4.1', input=prompt, timeout=30)\n",
+        encoding="utf-8",
+    )
+
+    (tmp_path / "guardrails.py").write_text(
+        "def sanitize_output(text):\n"
+        "    return text\n",
+        encoding="utf-8",
+    )
 
     statuses = _evaluate_rules(tmp_path)
 
@@ -116,5 +159,8 @@ def test_repository_without_required_artifacts_fails_all_rules(tmp_path: Path) -
     statuses = _evaluate_rules(tmp_path)
 
     assert len(statuses) == 12
-    assert all(status in {RuleStatus.FAIL, RuleStatus.NOT_APPLICABLE} for status in statuses.values())
-    assert any(status == RuleStatus.NOT_APPLICABLE for status in statuses.values())
+    assert all(
+        status in {RuleStatus.FAIL, RuleStatus.NOT_APPLICABLE, RuleStatus.NEEDS_SEMANTIC_REVIEW}
+        for status in statuses.values()
+    )
+    assert any(status in {RuleStatus.NOT_APPLICABLE, RuleStatus.NEEDS_SEMANTIC_REVIEW} for status in statuses.values())

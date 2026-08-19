@@ -18,8 +18,8 @@ def _context(path: Path) -> RepositoryContext:
 
 
 def test_rel_002_passes_with_retry_code_pattern_without_retry_dependencies(tmp_path: Path) -> None:
-    # Applicability requires an AI dependency, but evidence requirements for REL-002
-    # are satisfied by a code pattern in this scenario.
+    # Applicability now requires corroborated AI capability evidence. A lone AI
+    # dependency keeps applicability in semantic-review state.
     (tmp_path / "requirements.txt").write_text("openai>=1.0.0", encoding="utf-8")
     (tmp_path / "service.py").write_text(
         "from tenacity import retry, stop_after_attempt\n"
@@ -34,6 +34,5 @@ def test_rel_002_passes_with_retry_code_pattern_without_retry_dependencies(tmp_p
     evidence_repo = EvidenceCollectionService().collect(_context(tmp_path))
     result = RuleEvaluationService().evaluate_all(RuleCatalog([rule]), evidence_repo)[0]
 
-    assert result.status == RuleStatus.PASS
-    assert any(item.evidence_type.value == "CODE_PATTERN" for item in result.matched_evidence)
-    assert any(item.identifier == "python_tenacity_retry" for item in result.matched_evidence)
+    assert result.status == RuleStatus.NEEDS_SEMANTIC_REVIEW
+    assert any(item.identifier == "openai" for item in result.matched_evidence)

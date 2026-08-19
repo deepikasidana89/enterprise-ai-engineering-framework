@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from .base import EvidenceCollector
+from .workspace_index import ensure_workspace_index
 from ..models import Evidence, EvidenceType, RepositoryContext
 
 
@@ -12,31 +12,6 @@ class SecretManagementCollector(EvidenceCollector):
 
     name = "secret_management"
 
-    _MAX_FILE_BYTES = 1_000_000
-    _IGNORED_DIRS = {
-        ".git",
-        ".hg",
-        ".svn",
-        ".venv",
-        "venv",
-        "node_modules",
-        "__pycache__",
-        "dist",
-        "build",
-    }
-    _NON_PRODUCTION_DIRS = {
-        "test",
-        "tests",
-        "testing",
-        "spec",
-        "specs",
-        "example",
-        "examples",
-        "sample",
-        "samples",
-        "fixtures",
-        "docs",
-    }
     _SUPPORTED_SUFFIXES = {
         ".py",
         ".js",
@@ -148,12 +123,18 @@ class SecretManagementCollector(EvidenceCollector):
     )
 
     def collect(self, context: RepositoryContext) -> list[Evidence]:
-        root = context.root_path
+        index = ensure_workspace_index(context)
+
         items: list[Evidence] = []
 
-        for file_path in self._iter_candidate_files(root):
-            rel_path = str(file_path.relative_to(root))
-            content = self._read_text(file_path)
+        for indexed in index.files:
+            if indexed.suffix.lower() not in self._SUPPORTED_SUFFIXES:
+                continue
+            if indexed.is_test_like:
+                continue
+
+            rel_path = indexed.relative_path
+            content = indexed.text
             if content is None:
                 continue
 
@@ -194,44 +175,6 @@ class SecretManagementCollector(EvidenceCollector):
                     break
 
         return sorted(items, key=lambda item: (item.identifier, item.path or "", item.location or ""))
-
-    def _iter_candidate_files(self, root: Path) -> list[Path]:
-        candidates: list[Path] = []
-        for file_path in root.rglob("*"):
-            if not file_path.is_file():
-                continue
-            if any(part in self._IGNORED_DIRS for part in file_path.parts):
-                continue
-            if self._looks_like_non_production_path(file_path.relative_to(root)):
-                continue
-            if file_path.suffix.lower() not in self._SUPPORTED_SUFFIXES:
-                continue
-            try:
-                if file_path.stat().st_size > self._MAX_FILE_BYTES:
-                    continue
-            except OSError:
-                continue
-            candidates.append(file_path)
-        return candidates
-
-    def _looks_like_non_production_path(self, relative_path: Path) -> bool:
-        lowered_parts = {part.lower() for part in relative_path.parts}
-        if lowered_parts.intersection(self._NON_PRODUCTION_DIRS):
-            return True
-
-        name = relative_path.name.lower()
-        return (
-            name.startswith("test_")
-            or name.endswith("_test.py")
-            or name.endswith(".spec.ts")
-            or name.endswith(".spec.js")
-        )
-
-    def _read_text(self, file_path: Path) -> str | None:
-        try:
-            return file_path.read_text(encoding="utf-8", errors="ignore")
-        except OSError:
-            return None
 
     def _first_match_line(self, content: str, pattern: re.Pattern[str]) -> int | None:
         match = pattern.search(content)

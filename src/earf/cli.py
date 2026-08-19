@@ -130,6 +130,7 @@ def evaluate(
             if explain:
                 applicability_reason = str(result.metadata.get("applicability_reason", "")).strip()
                 uncertain_reasons = result.metadata.get("applicability_uncertain_reasons", [])
+                applicability_evidence = result.metadata.get("applicability_evidence", [])
                 if result.status == RuleStatus.NOT_APPLICABLE:
                     typer.echo(f"  applicability: FALSE - {applicability_reason or 'No applicability evidence detected.'}")
                 elif result.status == RuleStatus.NEEDS_SEMANTIC_REVIEW:
@@ -141,6 +142,24 @@ def evaluate(
                             typer.echo(f"    uncertain_reason: {reason}")
                 else:
                     typer.echo("  applicability: TRUE")
+
+                if isinstance(applicability_evidence, list) and applicability_evidence:
+                    typer.echo("  applicability_evidence:")
+                    for item in applicability_evidence:
+                        if not isinstance(item, dict):
+                            continue
+                        evidence_type = str(item.get("evidence_type", "")).strip()
+                        identifier = str(item.get("identifier", "")).strip()
+                        location = str(item.get("location", "")).strip()
+                        strength = str(item.get("strength", "")).strip()
+                        source = str(item.get("source", "")).strip()
+                        qualifier = f" strength={strength}" if strength else ""
+                        source_text = f" source={source}" if source else ""
+                        typer.echo(
+                            f"    - [{evidence_type}] {identifier} ({location or 'n/a'}){qualifier}{source_text}"
+                        )
+                        if strength.upper() == "WEAK":
+                            typer.echo("      ignored_for_high_confidence: weak evidence requires corroboration")
 
                 if result.missing_requirements:
                     typer.echo("  missing_requirements:")

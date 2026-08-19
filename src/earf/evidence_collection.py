@@ -8,13 +8,16 @@ from .collectors.config_collector import ConfigCollector
 from .collectors.dependency_collector import DependencyCollector
 from .collectors.file_collector import FileCollector
 from .collectors.secret_management_collector import SecretManagementCollector
+from .collectors.signal_collector import SignalCollector
 from .collectors.workflow_collector import WorkflowCollector
+from .collectors.workspace_index import WorkspaceScanner
 from .evidence import EvidenceRepository
 from .models import Evidence, RepositoryContext
 
 
 class EvidenceCollectionService:
     def __init__(self, collectors: list[EvidenceCollector] | None = None) -> None:
+        self._workspace_scanner = WorkspaceScanner()
         self._collectors = collectors or [
             FileCollector(),
             DependencyCollector(),
@@ -22,6 +25,7 @@ class EvidenceCollectionService:
             ConfigCollector(),
             CodePatternCollector(),
             SecretManagementCollector(),
+            SignalCollector(),
         ]
 
     def collect(
@@ -30,6 +34,7 @@ class EvidenceCollectionService:
         repository: EvidenceRepository | None = None,
     ) -> EvidenceRepository:
         repo = repository or EvidenceRepository()
+        context.metadata["workspace_index"] = self._workspace_scanner.build_index(context)
 
         merged: list[Evidence] = []
         for collector in self._collectors:

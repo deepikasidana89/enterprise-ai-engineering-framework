@@ -122,8 +122,8 @@ def test_uses_llm_detected_from_dependency(tmp_path: Path) -> None:
 
     detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
 
-    assert detection.detected is True
-    assert any(item.identifier == "openai" for item in detection.evidence)
+    assert detection.detected is False
+    assert detection.uncertain is True
 
 
 def test_uses_llm_detected_from_version_pinned_openai(tmp_path: Path) -> None:
@@ -132,8 +132,8 @@ def test_uses_llm_detected_from_version_pinned_openai(tmp_path: Path) -> None:
 
     detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
 
-    assert detection.detected is True
-    assert any(item.identifier == "openai" for item in detection.evidence)
+    assert detection.detected is False
+    assert detection.uncertain is True
 
 
 def test_uses_llm_detected_from_mixed_case_openai_dependency(tmp_path: Path) -> None:
@@ -142,8 +142,8 @@ def test_uses_llm_detected_from_mixed_case_openai_dependency(tmp_path: Path) -> 
 
     detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
 
-    assert detection.detected is True
-    assert any(item.identifier == "openai" for item in detection.evidence)
+    assert detection.detected is False
+    assert detection.uncertain is True
 
 
 def test_uses_llm_detected_from_langchain_openai_hyphen_dependency(tmp_path: Path) -> None:
@@ -152,8 +152,8 @@ def test_uses_llm_detected_from_langchain_openai_hyphen_dependency(tmp_path: Pat
 
     detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
 
-    assert detection.detected is True
-    assert any(item.identifier == "langchain-openai" for item in detection.evidence)
+    assert detection.detected is False
+    assert detection.uncertain is True
 
 
 def test_uses_llm_detected_from_langchain_openai_underscore_dependency(tmp_path: Path) -> None:
@@ -162,8 +162,8 @@ def test_uses_llm_detected_from_langchain_openai_underscore_dependency(tmp_path:
 
     detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
 
-    assert detection.detected is True
-    assert any(item.identifier == "langchain-openai" for item in detection.evidence)
+    assert detection.detected is False
+    assert detection.uncertain is True
 
 
 def test_uses_llm_detected_from_openai_import_pattern(tmp_path: Path) -> None:
@@ -172,8 +172,8 @@ def test_uses_llm_detected_from_openai_import_pattern(tmp_path: Path) -> None:
 
     detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
 
-    assert detection.detected is True
-    assert any(item.identifier == "openai_client_import" for item in detection.evidence)
+    assert detection.detected is False
+    assert detection.uncertain is True
 
 
 def test_uses_llm_detected_from_async_openai_constructor_pattern(tmp_path: Path) -> None:
@@ -182,8 +182,8 @@ def test_uses_llm_detected_from_async_openai_constructor_pattern(tmp_path: Path)
 
     detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
 
-    assert detection.detected is True
-    assert any(item.identifier == "openai_client_construct" for item in detection.evidence)
+    assert detection.detected is False
+    assert detection.uncertain is True
 
 
 def test_uses_llm_detected_from_azure_chat_openai_pattern(tmp_path: Path) -> None:
@@ -192,8 +192,8 @@ def test_uses_llm_detected_from_azure_chat_openai_pattern(tmp_path: Path) -> Non
 
     detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
 
-    assert detection.detected is True
-    assert any(item.identifier == "langchain_chat_provider_construct" for item in detection.evidence)
+    assert detection.detected is False
+    assert detection.uncertain is True
 
 
 def test_generic_model_service_does_not_trigger_uses_llm(tmp_path: Path) -> None:
@@ -250,8 +250,8 @@ def test_uses_llm_detected_from_real_requirements_file_path(tmp_path: Path) -> N
 
     detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
 
-    assert detection.detected is True
-    assert any(item.identifier == "openai" and item.path == "requirements.txt" for item in detection.evidence)
+    assert detection.detected is False
+    assert detection.uncertain is True
 
 
 def test_uses_llm_detected_from_real_pyproject_dependency_path(tmp_path: Path) -> None:
@@ -272,11 +272,8 @@ def test_uses_llm_detected_from_real_pyproject_dependency_path(tmp_path: Path) -
 
     detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
 
-    assert detection.detected is True
-    assert any(
-        item.identifier == "langchain-openai" and item.path == "pyproject.toml"
-        for item in detection.evidence
-    )
+    assert detection.detected is False
+    assert detection.uncertain is True
 
 
 def test_readme_keyword_does_not_trigger_rag(tmp_path: Path) -> None:
@@ -474,6 +471,12 @@ def test_direct_openai_usage_makes_evaluation_applicable_and_fails_without_eval_
 
 def test_ai_with_evaluation_workflow_passes_evaluation_rule(tmp_path: Path) -> None:
     (tmp_path / "requirements.txt").write_text("openai>=1.0\n", encoding="utf-8")
+    (tmp_path / "app.py").write_text(
+        "from openai import OpenAI\n"
+        "client = OpenAI()\n"
+        "client.responses.create(model='gpt-4o-mini', input='hi')\n",
+        encoding="utf-8",
+    )
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     (workflows / "evaluation.yml").write_text("name: evaluation", encoding="utf-8")
@@ -528,3 +531,126 @@ def test_non_ai_repository_remains_not_applicable_for_ai_rule(tmp_path: Path) ->
     result = RuleEvaluationService().evaluate_all(RuleCatalog([rule]), _collect(tmp_path))[0]
 
     assert result.status == RuleStatus.NOT_APPLICABLE
+
+
+def test_comment_only_ai_todo_does_not_trigger_uses_llm_true(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("# TODO integrate OpenAI client\n", encoding="utf-8")
+    repo = _collect(tmp_path)
+
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is False
+
+
+def test_gateway_runtime_plus_provider_config_detects_uses_llm_without_dependency_manifest(tmp_path: Path) -> None:
+    (tmp_path / "service.py").write_text(
+        "generation_client = ai_client\n"
+        "def run():\n"
+        "    return generation_client.generate('hi')\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "config" / "application-prod.yml").parent.mkdir(parents=True)
+    (tmp_path / "config" / "application-prod.yml").write_text(
+        "ai:\n"
+        "  provider: openai\n"
+        "  model: gpt-4.1\n",
+        encoding="utf-8",
+    )
+
+    repo = _collect(tmp_path)
+    detection = RepositoryCapabilityDetector(repo).detect("uses_llm")
+
+    assert detection.detected is True
+
+
+def test_observability_rule_does_not_pass_for_doc_keyword_only(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text("We use OpenTelemetry.", encoding="utf-8")
+    rule = _rule(
+        "OBS-001",
+        applicability={"always": True},
+        evidence_requirements={
+            "evidence_type": "implementation",
+            "source": "signal",
+            "identifiers": ["obs.telemetry_runtime"],
+        },
+    )
+
+    result = RuleEvaluationService().evaluate_all(RuleCatalog([rule]), _collect(tmp_path))[0]
+
+    assert result.status == RuleStatus.FAIL
+
+
+def test_observability_rule_passes_for_runtime_tracing_implementation(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text(
+        "from opentelemetry import trace\n"
+        "tracer = trace.get_tracer(__name__)\n"
+        "with tracer.start_as_current_span('x'):\n"
+        "    pass\n",
+        encoding="utf-8",
+    )
+    rule = _rule(
+        "OBS-001",
+        applicability={"always": True},
+        evidence_requirements={
+            "evidence_type": "implementation",
+            "source": "signal",
+            "identifiers": ["obs.telemetry_runtime"],
+        },
+    )
+
+    result = RuleEvaluationService().evaluate_all(RuleCatalog([rule]), _collect(tmp_path))[0]
+
+    assert result.status == RuleStatus.PASS
+
+
+def test_evaluation_config_only_does_not_pass_implementation_control(tmp_path: Path) -> None:
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "evaluation.yml").write_text("name: evaluation", encoding="utf-8")
+    rule = _rule(
+        "EVA-001",
+        applicability={"always": True},
+        evidence_requirements={
+            "all": [
+                {"evidence_type": "workflow"},
+                {
+                    "evidence_type": "test",
+                    "source": "signal",
+                    "identifiers": ["eva.runtime_evaluation"],
+                },
+            ]
+        },
+    )
+
+    result = RuleEvaluationService().evaluate_all(RuleCatalog([rule]), _collect(tmp_path))[0]
+
+    assert result.status == RuleStatus.FAIL
+
+
+def test_evaluation_implementation_passes_when_runtime_metric_execution_detected(tmp_path: Path) -> None:
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "evaluation.yml").write_text("name: evaluation", encoding="utf-8")
+    (tmp_path / "eval.py").write_text(
+        "def run_evaluation(output):\n"
+        "    return score_output(output)\n",
+        encoding="utf-8",
+    )
+    rule = _rule(
+        "EVA-001",
+        applicability={"always": True},
+        evidence_requirements={
+            "all": [
+                {"evidence_type": "workflow"},
+                {
+                    "evidence_type": "test",
+                    "source": "signal",
+                    "identifiers": ["eva.runtime_evaluation"],
+                },
+            ]
+        },
+    )
+
+    result = RuleEvaluationService().evaluate_all(RuleCatalog([rule]), _collect(tmp_path))[0]
+
+    assert result.status == RuleStatus.PASS

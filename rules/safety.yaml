@@ -17,12 +17,11 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: dependency
-          path: requirements.txt
-          identifiers: [pydantic, jsonschema, marshmallow]
-        - evidence_type: dependency
-          path: pyproject.toml
-          identifiers: [pydantic, jsonschema, marshmallow]
+        - evidence_type: implementation
+          source: signal
+          identifiers: [saf.input_validation_runtime]
+        - evidence_type: code_pattern
+          identifiers: [pydantic_model_validation, java_validation_annotation, schema_validation_library]
     metadata: {}
 
   - id: SAF-002
@@ -43,10 +42,7 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: dependency
-          path: requirements.txt
-          identifiers: [guardrails-ai, presidio-analyzer, llm-guard]
-        - evidence_type: dependency
-          path: pyproject.toml
-          identifiers: [guardrails-ai, presidio-analyzer, llm-guard]
+        - evidence_type: implementation
+          source: signal
+          identifiers: [saf.output_guardrail_runtime]
     metadata: {}

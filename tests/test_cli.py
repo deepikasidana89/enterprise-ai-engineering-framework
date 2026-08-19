@@ -272,8 +272,8 @@ def test_evidence_command_summary(tmp_path: Path) -> None:
     assert "Files: 1" in result.stdout
     assert "Dependencies: 2" in result.stdout
     assert "Workflows: 1" in result.stdout
-    assert "Configurations: 1" in result.stdout
-    assert "Total Evidence: 5" in result.stdout
+    assert "Configurations: 2" in result.stdout
+    assert "Total Evidence: 6" in result.stdout
 
 
 def _report_rules_yaml() -> str:

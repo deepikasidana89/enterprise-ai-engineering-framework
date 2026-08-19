@@ -17,20 +17,9 @@ rules:
     references: []
     evidence_requirements:
       any:
-        - evidence_type: dependency
-          path: requirements.txt
-          identifiers:
-            - opentelemetry-api
-            - opentelemetry-sdk
-            - structlog
-            - loguru
-            - prometheus-client
-        - evidence_type: dependency
-          path: pyproject.toml
-          identifiers:
-            - opentelemetry-api
-            - opentelemetry-sdk
-            - structlog
-            - loguru
-            - prometheus-client
+        - evidence_type: implementation
+          source: signal
+          identifiers: [obs.telemetry_runtime]
+        - evidence_type: code_pattern
+          identifiers: [otel_tracing]
     metadata: {}
