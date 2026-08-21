@@ -16,6 +16,9 @@ from .rules.loader import RuleLoader
 from .rules.results import RuleResult
 from .scoring.models import ReadinessScore
 from .scoring.service import ScoringService
+from .llm_config import LLMConfig
+from .reasoning import EvidenceSnippet, LocalLLMReasoner, deterministic_reasoning
+from .models import EvidenceType
 
 
 @dataclass
@@ -39,6 +42,7 @@ class EARFPipeline:
         scoring_service: ScoringService | None = None,
         report_builder: ReportBuilder | None = None,
         rules_path: Path | None = None,
+        llm_config: LLMConfig | None = None,
     ) -> None:
         self._repository_loader = repository_loader or RepositoryLoader()
         self._evidence_service = evidence_service or EvidenceCollectionService()
@@ -47,6 +51,7 @@ class EARFPipeline:
         self._scoring_service = scoring_service or ScoringService()
         self._report_builder = report_builder or ReportBuilder()
         self._rules_path = self._resolve_rules_path(rules_path)
+        self._llm_config = llm_config or LLMConfig.from_environment()
 
     def _resolve_rules_path(self, rules_path: Path | None) -> Path:
         if rules_path is not None:
@@ -60,6 +65,7 @@ class EARFPipeline:
     def analyze(self, repository_path: Path) -> AnalysisResult:
         repository_context = self._repository_loader.load(repository_path)
         evidence_repository = self._evidence_service.collect(repository_context)
+        self._reason_about_llm(repository_context, evidence_repository)
         rule_catalog, _ = RuleCatalog.from_path(self._rules_path, loader=self._rule_loader)
         rule_results = self._rule_evaluation_service.evaluate_all(
             rule_catalog,
@@ -77,3 +83,29 @@ class EARFPipeline:
         readiness_report = self._report_builder.build(analysis_result)
         analysis_result.readiness_report = readiness_report
         return analysis_result
+
+    def _reason_about_llm(self, context: RepositoryContext, repository: EvidenceRepository) -> None:
+        # Disabled means preserve the established deterministic pipeline exactly.
+        if not self._llm_config.enabled:
+            return
+        candidates = [e for e in repository.all() if e.identifier in {
+            "openai_client_import", "openai_client_construct", "anthropic_client_construct",
+            "llm_provider_api_call", "ai.provider_import", "ai.runtime_call", "ai.model_config",
+        } or e.evidence_type in {EvidenceType.DEPENDENCY, EvidenceType.RUNTIME_CALL}]
+        snippets = [EvidenceSnippet(f"E{i}", e.path or "", int((e.metadata or {}).get("line", 1)),
+                                    int((e.metadata or {}).get("line", 1)), e.evidence_type.value,
+                                    e.description, str((e.metadata or {}).get("matched_text", e.description)))
+                    for i, e in enumerate(candidates[:40], 1)]
+        reasoner = None
+        if self._llm_config.enabled:
+            try:
+                reasoner = LocalLLMReasoner(self._llm_config.resolved_model_path(context.root_path), self._llm_config.context_size, self._llm_config.temperature)
+                result = reasoner.evaluate("uses_llm", snippets)
+            except Exception:
+                result = deterministic_reasoning("uses_llm", snippets)
+        else:
+            result = deterministic_reasoning("uses_llm", snippets)
+        repository.add(Evidence(EvidenceType.LLM_REVIEW, "hybrid_reasoning", "LLM usage capability verdict",
+                                identifier="uses_llm", metadata={"verdict": result.verdict, "confidence": result.confidence,
+                                "reasoning_method": result.reasoning_method, "model": result.model or "",
+                                "supporting_evidence_ids": result.supporting_evidence_ids}))

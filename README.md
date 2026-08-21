@@ -277,9 +277,22 @@ Automated Evaluation Coverage represents the percentage of applicable EARF contr
 
 - EARF uses deterministic repository analysis and pattern-based source inspection.
 - EARF does not perform AST-level semantic verification of implementation correctness.
-- EARF does not use LLM-based repository analysis.
+- Optional local LLM reasoning can review selected evidence snippets for `uses_llm`; deterministic scanning and scoring remain authoritative.
 - Custom enterprise implementations may not always be recognized by current deterministic patterns.
 - A detected evidence signal does not guarantee that the control is complete or correctly implemented.
+
+### Optional Local LLM Reasoning
+
+EARF works without an LLM. To enable private, local evidence reasoning, install:
+
+```bash
+pip install llama-cpp-python huggingface-hub
+mkdir -p models
+hf download Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF qwen2.5-coder-1.5b-instruct-q4_k_m.gguf --local-dir ./models
+EARF_LLM_ENABLED=true earf evaluate .
+```
+
+The model is loaded lazily and reused for one scan. EARF first finds small, relevant snippets, then asks the local model for a structured verdict. No paid API is required and snippets do not leave the machine. If the model, package, or load operation is unavailable, EARF continues with deterministic analysis and does not reduce the readiness score. Override the model with `EARF_LLM_MODEL_PATH` and context size with `EARF_LLM_CONTEXT_SIZE`.
 
 ## Key Concepts
 

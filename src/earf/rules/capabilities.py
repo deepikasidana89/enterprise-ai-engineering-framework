@@ -166,6 +166,16 @@ class RepositoryCapabilityDetector:
 
     def _detect_uncached(self, capability: str) -> CapabilityDetection:
         if capability in {"uses_llm", "uses_ai"}:
+            llm_reviews = self._repository.find(evidence_type=EvidenceType.LLM_REVIEW, identifier="uses_llm")
+            if llm_reviews:
+                review = llm_reviews[-1]
+                verdict = str(review.metadata.get("verdict", "")).upper()
+                if verdict == "VERIFIED":
+                    return CapabilityDetection(capability, True, "LLM usage was verified by the configured evidence reasoner.",
+                                               llm_reviews, confidence=CapabilityConfidence.HIGH)
+                if verdict in {"PARTIALLY_VERIFIED", "UNVERIFIED"}:
+                    return CapabilityDetection(capability, False, "LLM-related signals were reviewed but implementation was not fully verified.",
+                                               llm_reviews, uncertain=True, confidence=CapabilityConfidence.LOW)
             dependency_hits = self._dependency_matches(self._LLM_DEPENDENCIES)
             provider_pattern_hits = self._code_pattern_matches(self._LLM_PROVIDER_CODE_PATTERNS)
             import_hits = self._signal_matches("ai.provider_import")
