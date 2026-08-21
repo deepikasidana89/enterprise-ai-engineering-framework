@@ -29,6 +29,26 @@ The goal is not to certify an AI system.
 
 The goal is to make **AI production readiness more measurable, repeatable, and evidence-driven.**
 
+## Evidence-Based Evaluation Validation
+
+EARF includes labeled evaluation fixtures under `tests/fixtures/llm_usage`. These small repositories represent positive, negative, and incomplete implementation cases. They help verify that discovery signals are not incorrectly treated as proof of capability.
+
+Examples include:
+
+- An `openai` dependency without source usage: `UNVERIFIED`
+- An instantiated client without an invocation: `PARTIALLY_VERIFIED`
+- An actual client invocation connected to application code: `VERIFIED`
+- A comment mentioning OpenAI: `NOT_DETECTED`
+- An approval function called without evidence that execution is blocked: `PARTIALLY_VERIFIED`
+
+Run the reliability fixture tests with:
+
+```bash
+pytest -q tests/test_reliability_fixtures.py
+```
+
+These fixtures are evaluation examples, not proof that EARF can verify every possible implementation. Complex inter-file control flow, dynamic imports, custom frameworks, and runtime behavior may still require manual review.
+
 ---
 
 ## ⚡ Quick Start
