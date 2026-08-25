@@ -1,5 +1,8 @@
 # Enterprise AI Readiness Framework (EARF)
 
+[![CI](https://github.com/deepikasidana89/enterprise-ai-engineering-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/deepikasidana89/enterprise-ai-engineering-framework/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 > **Is your AI system actually ready for production?**
 
 **EARF** is an open-source engineering framework and CLI for evaluating AI application repositories for evidence of **reliability, safety, security, evaluation, observability, privacy, governance, and operational readiness**.
@@ -11,6 +14,31 @@ Instead of asking only *“How accurate is the model?”*, EARF asks a broader e
 EARF turns repository evidence into deterministic rule evaluations, severity-weighted readiness scores, and actionable reports.
 
 Current release status: **Early Developer Release** (version `0.7.0`).
+
+> EARF is designed for engineering teams, AI platform teams, reviewers, and technical leaders who need a repeatable way to identify production-readiness gaps before deployment.
+
+## Start here
+
+The fastest way to understand EARF is to run it against one of the example projects in this repository:
+
+```bash
+git clone https://github.com/deepikasidana89/enterprise-ai-engineering-framework.git
+cd enterprise-ai-engineering-framework
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+python -m pip install -e .
+earf report examples/not-ready-ai-project --format markdown --output EARF_REPORT.md
+```
+
+Open `EARF_REPORT.md` to review the findings, evidence, scores, and recommendations. You can then run the same command against your own AI repository.
+
+**Want to help validate EARF?** Run it on a non-confidential AI project and share what was useful, inaccurate, or missing. Feedback, rule proposals, example repositories, and short case studies are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) or open an issue.
+
+## Why EARF exists
+
+AI projects often reach prototype stage before teams have a consistent way to evaluate reliability, security, observability, human oversight, evaluation, and operational controls. Model accuracy alone does not answer whether the surrounding system is ready to operate safely and reliably.
+
+EARF makes those engineering questions visible by collecting repository evidence, evaluating explicit rules, and producing actionable reports that teams can use to prioritize improvements.
 
 ---
 
@@ -49,6 +77,19 @@ pytest -q tests/test_reliability_fixtures.py
 
 These fixtures are evaluation examples, not proof that EARF can verify every possible implementation. Complex inter-file control flow, dynamic imports, custom frameworks, and runtime behavior may still require manual review.
 
+## How to interpret an EARF report
+
+EARF reports **engineering evidence**, not certification. A `PASS` means that supported evidence was detected. It does not prove that a control is complete, effective, secure, or correctly implemented in production.
+
+Use the report as a structured starting point for engineering review:
+
+1. Review the applicable controls and evidence locations.
+2. Validate important findings with the responsible engineers.
+3. Address prioritized gaps and rerun EARF.
+4. Combine repository findings with runtime evaluation, threat modeling, telemetry, human review, and operational evidence.
+
+This evidence-first approach is intentional. It helps teams distinguish what is observed in a repository from what still requires semantic or runtime validation.
+
 ---
 
 ## ⚡ Quick Start
@@ -56,8 +97,8 @@ These fixtures are evaluation examples, not proof that EARF can verify every pos
 Clone EARF:
 
 ```bash
-git clone https://github.com/deepikasidana89/enterprise-ai-readiness-framework.git
-cd enterprise-ai-readiness-framework
+git clone https://github.com/deepikasidana89/enterprise-ai-engineering-framework.git
+cd enterprise-ai-engineering-framework
 ```
 
 Install locally:
@@ -118,6 +159,8 @@ The action generates:
 
 - `earf-report.json`
 - `EARF_REPORT.md`
+
+Use the GitHub Action to assess changes on every pull request and push. For stricter enforcement, set `fail-on-not-ready: true` after calibrating the rules for your repository.
 
 EARF V1 provides engineering readiness evidence. It does not constitute certification, security assurance, or compliance approval.
 
@@ -365,6 +408,16 @@ We welcome contributions from the community. Please see [CONTRIBUTING.md](CONTRI
 - Suggesting improvements
 - Submitting assessments
 - Sharing best practices
+
+High-value contributions include:
+
+- New positive and negative evaluation fixtures
+- False-positive and false-negative reports
+- Support for additional AI frameworks and repository patterns
+- Example assessments and anonymized case studies
+- Documentation improvements and independent validation
+
+If you use EARF on a project, we would especially value a short description of what it found, what you changed, and whether the report helped your team make a decision. Please do not include confidential source code, customer data, credentials, or proprietary implementation details.
 
 ## License
 
