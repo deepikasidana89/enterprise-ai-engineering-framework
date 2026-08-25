@@ -32,6 +32,13 @@ earf report examples/not-ready-ai-project --format markdown --output EARF_REPORT
 
 Open `EARF_REPORT.md` to review the findings, evidence, scores, and recommendations. You can then run the same command against your own AI repository.
 
+### Sample assessment
+
+See EARF applied to the separate [General Knowledge Assistant](https://github.com/deepikasidana89/general-knowledge-assistant) project:
+
+- [Sample assessment instructions and interpretation](examples/general-knowledge-assistant-assessment/README.md)
+- [Generated EARF report](examples/general-knowledge-assistant-assessment/EARF_REPORT.md)
+
 **Want to help validate EARF?** Run it on a non-confidential AI project and share what was useful, inaccurate, or missing. Feedback, rule proposals, example repositories, and short case studies are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) or open an issue.
 
 ## Why EARF exists
