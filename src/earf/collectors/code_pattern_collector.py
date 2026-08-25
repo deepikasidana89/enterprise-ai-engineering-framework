@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from .base import EvidenceCollector
-from .code_pattern_registry import CODE_PATTERN_REGISTRY, CodePatternDefinition
+from .code_pattern_registry import CODE_PATTERN_REGISTRY
 from .workspace_index import ensure_workspace_index
 from ..models import Evidence, EvidenceType, RepositoryContext
 
