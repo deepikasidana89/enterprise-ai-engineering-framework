@@ -45,11 +45,7 @@ For a positive comparison, see the [READY assessment of the included Ready AI Pr
 
 EARF is inviting engineers, researchers, students, and AI platform or governance professionals to assess non-confidential AI projects and provide independent feedback. The pilot takes approximately 30–60 minutes and is designed to validate usability, finding accuracy, and practical impact.
 
-- [Pilot overview](docs/early-adopter-pilot.md)
-- [Registration form questions](docs/early-adopter-registration-form.md)
-- [Feedback form questions](docs/early-adopter-feedback-form.md)
-- [Testimonial consent template](docs/early-adopter-consent.md)
-- [Adoption tracker template](docs/early-adopter-tracker.csv)
+See the [pilot overview](docs/early-adopter-pilot.md). To participate, contact the maintainer for the private pilot materials. Please do not submit confidential source code, participant information, credentials, customer data, or proprietary implementation details through this public repository.
 
 **Want to help validate EARF?** Run it on a non-confidential AI project and share what was useful, inaccurate, or missing. Feedback, rule proposals, example repositories, and short case studies are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) or open an issue.
 
