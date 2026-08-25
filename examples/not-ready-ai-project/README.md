@@ -1,6 +1,6 @@
-# Not Ready AI Project (Example)
+# Not Ready Project (Example)
 
-This minimal repository intentionally omits key artifacts so EARF can demonstrate failing outcomes.
+This minimal repository intentionally omits key engineering artifacts so EARF can demonstrate failing outcomes. It is a generic placeholder project, not an AI application.
 
 ## What It Demonstrates
 
