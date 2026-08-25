@@ -41,6 +41,16 @@ See EARF applied to the separate [General Knowledge Assistant](https://github.co
 
 For a positive comparison, see the [READY assessment of the included Ready AI Project fixture](examples/ready-ai-project-assessment/README.md) and its [generated report](examples/ready-ai-project-assessment/EARF_REPORT.md).
 
+### Join the EARF Early Adopter Pilot
+
+EARF is inviting engineers, researchers, students, and AI platform or governance professionals to assess non-confidential AI projects and provide independent feedback. The pilot takes approximately 30–60 minutes and is designed to validate usability, finding accuracy, and practical impact.
+
+- [Pilot overview](docs/early-adopter-pilot.md)
+- [Registration form questions](docs/early-adopter-registration-form.md)
+- [Feedback form questions](docs/early-adopter-feedback-form.md)
+- [Testimonial consent template](docs/early-adopter-consent.md)
+- [Adoption tracker template](docs/early-adopter-tracker.csv)
+
 **Want to help validate EARF?** Run it on a non-confidential AI project and share what was useful, inaccurate, or missing. Feedback, rule proposals, example repositories, and short case studies are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) or open an issue.
 
 ## Why EARF exists
