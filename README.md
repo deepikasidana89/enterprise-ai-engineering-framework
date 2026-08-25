@@ -39,6 +39,8 @@ See EARF applied to the separate [General Knowledge Assistant](https://github.co
 - [Sample assessment instructions and interpretation](examples/general-knowledge-assistant-assessment/README.md)
 - [Generated EARF report](examples/general-knowledge-assistant-assessment/EARF_REPORT.md)
 
+For a positive comparison, see the [READY assessment of the included Ready AI Project fixture](examples/ready-ai-project-assessment/README.md) and its [generated report](examples/ready-ai-project-assessment/EARF_REPORT.md).
+
 **Want to help validate EARF?** Run it on a non-confidential AI project and share what was useful, inaccurate, or missing. Feedback, rule proposals, example repositories, and short case studies are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) or open an issue.
 
 ## Why EARF exists
