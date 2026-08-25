@@ -3,6 +3,9 @@ name: Example CI
 on:
   push:
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
