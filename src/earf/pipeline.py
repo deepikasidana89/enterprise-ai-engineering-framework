@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .evidence import EvidenceRepository
 from .evidence_collection import EvidenceCollectionService
-from .models import RepositoryContext
+from .models import Evidence, RepositoryContext
 from .repository import RepositoryLoader
 from .reporting.builder import ReportBuilder
 from .reporting.models import ReadinessReport
