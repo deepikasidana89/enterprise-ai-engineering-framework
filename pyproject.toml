@@ -45,7 +45,7 @@ dev = [
   "mypy",
   "pytest",
   "pytest-cov",
-  "ruff",
+  "ruff>=0.5.7,<0.6",
   "types-PyYAML",
   "twine"
 ]
