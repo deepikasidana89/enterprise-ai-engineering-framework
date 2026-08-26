@@ -32,16 +32,12 @@ def version() -> None:
 
 @app.command()
 def scan(path: Path) -> None:
-    """Load repository at PATH (Phase 1: scanning not implemented)."""
+    """Load repository at PATH."""
     try:
         context = RepositoryLoader().load(path)
         typer.echo("Repository loaded successfully.")
-        typer.echo("")
         typer.echo(f"Project: {context.project_name}")
         typer.echo(f"Path: {context.root_path}")
-        typer.echo("")
-        typer.echo("Repository scanning is not implemented in Phase 1.")
-        raise typer.Exit(code=0)
     except InvalidRepositoryPathError as exc:
         typer.echo(f"Error: {exc}")
         raise typer.Exit(code=2)
@@ -49,29 +45,15 @@ def scan(path: Path) -> None:
 
 @app.command()
 def evidence(path: Path) -> None:
-    """Collect repository evidence (Phase 3: collection only)."""
+    """Collect repository evidence."""
     try:
         analysis = _pipeline().analyze(path)
-        context = analysis.repository_context
         repository = analysis.evidence_repository
-
-        file_count = len(repository.filter_by_type(EvidenceType.FILE))
-        dependency_count = len(repository.filter_by_type(EvidenceType.DEPENDENCY))
-        workflow_count = len(repository.filter_by_type(EvidenceType.WORKFLOW))
-        config_count = len(repository.filter_by_type(EvidenceType.CONFIGURATION))
-
-        typer.echo("Repository loaded successfully")
-        typer.echo("")
-        typer.echo(f"Project: {context.project_name}")
-        typer.echo(f"Path: {context.root_path}")
-        typer.echo("")
-        typer.echo("Evidence Summary")
-        typer.echo("")
-        typer.echo(f"Files: {file_count}")
-        typer.echo(f"Dependencies: {dependency_count}")
-        typer.echo(f"Workflows: {workflow_count}")
-        typer.echo(f"Configurations: {config_count}")
-        typer.echo("")
+        typer.echo(f"Project: {analysis.repository_context.project_name}")
+        typer.echo(f"Files: {len(repository.filter_by_type(EvidenceType.FILE))}")
+        typer.echo(f"Dependencies: {len(repository.filter_by_type(EvidenceType.DEPENDENCY))}")
+        typer.echo(f"Workflows: {len(repository.filter_by_type(EvidenceType.WORKFLOW))}")
+        typer.echo(f"Configurations: {len(repository.filter_by_type(EvidenceType.CONFIGURATION))}")
         typer.echo(f"Total Evidence: {repository.count()}")
     except InvalidRepositoryPathError as exc:
         typer.echo(f"Error: {exc}")
@@ -81,176 +63,53 @@ def evidence(path: Path) -> None:
 @app.command()
 def evaluate(
     path: Path,
-    show_evidence: bool = typer.Option(
-        False,
-        "--show-evidence",
-        help="Show matched evidence identifiers per rule",
-    ),
-    explain: bool = typer.Option(
-        False,
-        "--explain",
-        help="Explain applicability and evidence decisions for each rule",
-    ),
-    rules_path: Path | None = typer.Option(
-        None,
-        "--rules-path",
-        help="Rules file or directory",
-    ),
+    show_evidence: bool = typer.Option(False, "--show-evidence", help="Show matched evidence identifiers per rule"),
+    explain: bool = typer.Option(False, "--explain", help="Explain applicability and evidence decisions for each rule"),
+    rules_path: Path | None = typer.Option(None, "--rules-path", help="Rules file or directory"),
 ) -> None:
-    """Evaluate rules against collected evidence (Phase 4: matching only)."""
+    """Evaluate rules against collected evidence."""
     try:
         analysis = _pipeline(rules_path).analyze(path)
-        context = analysis.repository_context
-        catalog = analysis.rule_catalog
-        results = analysis.rule_results
-
-        typer.echo(f"Repository: {context.project_name}")
-        typer.echo("")
-        typer.echo("Rule Evaluation")
-        typer.echo("")
+        rule_lookup = {rule.id: rule for rule in analysis.rule_catalog.all()}
+        typer.echo(f"Repository: {analysis.repository_context.project_name}\n")
+        typer.echo("Rule Evaluation\n")
         typer.echo("ID       Status          Title")
-
-        rule_lookup = {rule.id: rule for rule in catalog.all()}
-        for result in results:
-            title = rule_lookup.get(result.rule_id)
-            title_text = title.title if title is not None else ""
-            typer.echo(f"{result.rule_id:<8} {result.status.name:<15} {title_text}")
+        for result in analysis.rule_results:
+            rule = rule_lookup.get(result.rule_id)
+            typer.echo(f"{result.rule_id:<8} {result.status.name:<15} {rule.title if rule else ''}")
             if show_evidence and result.matched_evidence:
-                rendered: list[str] = []
-                for item in result.matched_evidence:
-                    if item.location:
-                        rendered.append(f"{item.identifier} ({item.location})")
-                    elif item.path:
-                        rendered.append(f"{item.identifier} ({item.path})")
-                    else:
-                        rendered.append(item.identifier)
-                matched_ids = ", ".join(rendered)
-                typer.echo(f"  matched: {matched_ids}")
-
+                typer.echo("  matched: " + ", ".join(item.identifier for item in result.matched_evidence))
             if explain:
-                applicability_reason = str(result.metadata.get("applicability_reason", "")).strip()
-                uncertain_reasons = result.metadata.get("applicability_uncertain_reasons", [])
-                applicability_evidence = result.metadata.get("applicability_evidence", [])
                 if result.status == RuleStatus.NOT_APPLICABLE:
-                    typer.echo(f"  applicability: FALSE - {applicability_reason or 'No applicability evidence detected.'}")
+                    typer.echo("  applicability: FALSE")
                 elif result.status == RuleStatus.NEEDS_SEMANTIC_REVIEW:
-                    typer.echo(
-                        f"  applicability: UNCERTAIN - {applicability_reason or 'Deterministic applicability is inconclusive.'}"
-                    )
-                    if isinstance(uncertain_reasons, list):
-                        for reason in uncertain_reasons:
-                            typer.echo(f"    uncertain_reason: {reason}")
+                    typer.echo("  applicability: UNCERTAIN")
                 else:
                     typer.echo("  applicability: TRUE")
-
-                if isinstance(applicability_evidence, list) and applicability_evidence:
-                    typer.echo("  applicability_evidence:")
-                    for item in applicability_evidence:
-                        if not isinstance(item, dict):
-                            continue
-                        evidence_type = str(item.get("evidence_type", "")).strip()
-                        identifier = str(item.get("identifier", "")).strip()
-                        location = str(item.get("location", "")).strip()
-                        strength = str(item.get("strength", "")).strip()
-                        source = str(item.get("source", "")).strip()
-                        qualifier = f" strength={strength}" if strength else ""
-                        source_text = f" source={source}" if source else ""
-                        typer.echo(
-                            f"    - [{evidence_type}] {identifier} ({location or 'n/a'}){qualifier}{source_text}"
-                        )
-                        if strength.upper() == "WEAK":
-                            typer.echo("      ignored_for_high_confidence: weak evidence requires corroboration")
-
                 if result.missing_requirements:
                     typer.echo("  missing_requirements:")
                     for requirement in result.missing_requirements:
                         typer.echo(f"    - {requirement}")
-
-        summary = {
-            RuleStatus.PASS: 0,
-            RuleStatus.FAIL: 0,
-            RuleStatus.MANUAL_REVIEW: 0,
-            RuleStatus.NEEDS_SEMANTIC_REVIEW: 0,
-            RuleStatus.NOT_APPLICABLE: 0,
-            RuleStatus.DISABLED: 0,
-            RuleStatus.ERROR: 0,
-        }
-        for result in results:
-            summary[result.status] += 1
-
-        typer.echo("")
-        typer.echo("Summary")
-        typer.echo("")
-        typer.echo(f"Passed: {summary[RuleStatus.PASS]}")
-        typer.echo(f"Failed: {summary[RuleStatus.FAIL]}")
-        typer.echo(f"Manual Review: {summary[RuleStatus.MANUAL_REVIEW]}")
-        typer.echo(f"Needs Semantic Review: {summary[RuleStatus.NEEDS_SEMANTIC_REVIEW]}")
-        typer.echo(f"Not Applicable: {summary[RuleStatus.NOT_APPLICABLE]}")
-        typer.echo(f"Disabled: {summary[RuleStatus.DISABLED]}")
-        typer.echo(f"Errors: {summary[RuleStatus.ERROR]}")
-        typer.echo(f"Total: {len(results)}")
     except (InvalidRepositoryPathError, RuleDefinitionError) as exc:
         typer.echo(f"Error: {exc}")
         raise typer.Exit(code=2)
 
 
 @app.command()
-def score(
-    path: Path,
-    rules_path: Path | None = typer.Option(
-        None,
-        "--rules-path",
-        help="Rules file or directory",
-    ),
-) -> None:
-    """Calculate enterprise readiness score from rule evaluation results."""
+def score(path: Path, rules_path: Path | None = typer.Option(None, "--rules-path", help="Rules file or directory")) -> None:
+    """Calculate enterprise readiness score."""
     try:
         analysis = _pipeline(rules_path).analyze(path)
-        context = analysis.repository_context
         readiness = analysis.readiness_score
-
-        typer.echo(f"Repository: {context.project_name}")
-        typer.echo("")
-        typer.echo("Overall Readiness")
-        typer.echo("")
-        typer.echo(f"{readiness.overall_score:.1f} / 100")
-        typer.echo("")
-        typer.echo("Production Status")
-        typer.echo("")
-        typer.echo(readiness.production_readiness.value)
-        typer.echo("")
-        typer.echo("Category Scores")
-        typer.echo("")
-        typer.echo("Category          Score   Coverage")
+        typer.echo(f"Repository: {analysis.repository_context.project_name}\n")
+        typer.echo(f"Overall Readiness\n\n{readiness.overall_score:.1f} / 100\n")
+        typer.echo(f"Production Status\n\n{readiness.production_readiness.value}\n")
+        typer.echo("Category Scores\n")
         for category in readiness.category_ranking():
             detail = readiness.category_details.get(category)
-            if detail is None:
-                continue
-            scored = detail.passed_rules + detail.failed_rules
-            tracked = (
-                detail.passed_rules
-                + detail.failed_rules
-                + detail.manual_review_rules
-                + detail.needs_semantic_review_rules
-                + detail.not_applicable_rules
-                + detail.disabled_rules
-                + detail.error_rules
-            )
-            value = readiness.category_scores.get(category)
-            score_text = f"{value:>5.1f}" if value is not None else "  N/A"
-            typer.echo(f"{category.title():<16}{score_text}   {scored}/{tracked}")
-
-        typer.echo("")
-        typer.echo("Summary")
-        typer.echo("")
-        typer.echo(f"Passed: {readiness.passed_rules}")
-        typer.echo(f"Failed: {readiness.failed_rules}")
-        typer.echo(f"Needs Semantic Review: {readiness.needs_semantic_review_rules}")
-        typer.echo(f"Not Applicable: {readiness.not_applicable_rules}")
-        typer.echo(f"Disabled: {readiness.disabled_rules}")
-        typer.echo(f"Errors: {readiness.error_rules}")
-        typer.echo(f"Critical Failures: {readiness.critical_failures}")
-        typer.echo(f"High Failures: {readiness.high_failures}")
+            if detail is not None:
+                value = readiness.category_scores.get(category)
+                typer.echo(f"{category.title():<16}{f'{value:.1f}' if value is not None else 'N/A'}")
     except (InvalidRepositoryPathError, RuleDefinitionError) as exc:
         typer.echo(f"Error: {exc}")
         raise typer.Exit(code=2)
@@ -259,13 +118,9 @@ def score(
 @app.command()
 def report(
     path: Path,
-    output_format: str = typer.Option("console", "--format", help="Report output format"),
-    output: Path | None = typer.Option(None, "--output", help="Output file for json or markdown reports"),
-    rules_path: Path | None = typer.Option(
-        None,
-        "--rules-path",
-        help="Rules file or directory",
-    ),
+    output_format: str = typer.Option("console", "--format", help="Report output format: console, json, markdown, or pdf"),
+    output: Path | None = typer.Option(None, "--output", help="Output file for json, markdown, or PDF reports"),
+    rules_path: Path | None = typer.Option(None, "--rules-path", help="Rules file or directory"),
 ) -> None:
     """Generate an enterprise AI readiness report."""
     try:
@@ -273,23 +128,24 @@ def report(
         report_model = analysis.readiness_report
         assert report_model is not None
         writer = ReportWriter()
-
         selected_format = output_format.strip().lower()
+
         if selected_format == "console":
             if output is not None:
                 typer.echo("Error: --output is not supported with console format")
                 raise typer.Exit(code=2)
             typer.echo(writer.render_console(report_model))
         elif selected_format == "json":
-            output_path = output or Path("earf-report.json")
-            written = writer.write_json(report_model, output_path)
+            written = writer.write_json(report_model, output or Path("earf-report.json"))
             typer.echo(f"Report written to: {written}")
         elif selected_format == "markdown":
-            output_path = output or Path("EARF_REPORT.md")
-            written = writer.write_markdown(report_model, output_path)
+            written = writer.write_markdown(report_model, output or Path("EARF_REPORT.md"))
             typer.echo(f"Report written to: {written}")
+        elif selected_format == "pdf":
+            written = writer.write_pdf(report_model, output or Path("EARF_REPORT.pdf"))
+            typer.echo(f"PDF report written to: {written}")
         else:
-            typer.echo(f"Error: unsupported format {output_format!r}")
+            typer.echo(f"Error: unsupported format {output_format!r}. Use console, json, markdown, or pdf.")
             raise typer.Exit(code=2)
     except (InvalidRepositoryPathError, RuleDefinitionError) as exc:
         typer.echo(f"Error: {exc}")
@@ -297,35 +153,24 @@ def report(
 
 
 def _load_rule_catalog(path: Path) -> tuple[RuleCatalog, int]:
-    catalog, file_count = RuleCatalog.from_path(path)
-    return catalog, file_count
+    return RuleCatalog.from_path(path)
 
 
 @rules_app.command("list")
-def rules_list(
-    path: Path = typer.Option(Path("rules"), "--path", help="Rules file or directory")
-) -> None:
-    """List all loaded rules."""
+def rules_list(path: Path = typer.Option(Path("rules"), "--path", help="Rules file or directory")) -> None:
     try:
         catalog, _ = _load_rule_catalog(path)
-        rules = catalog.all()
         typer.echo("ID  Category  Severity  Title  Enabled")
-        for rule in rules:
-            typer.echo(
-                f"{rule.id}  {rule.category}  {rule.severity.name.lower()}  {rule.title}  {rule.enabled}"
-            )
-        typer.echo("")
-        typer.echo(f"{len(rules)} rules loaded.")
+        for rule in catalog.all():
+            typer.echo(f"{rule.id}  {rule.category}  {rule.severity.name.lower()}  {rule.title}  {rule.enabled}")
+        typer.echo(f"\n{len(catalog.all())} rules loaded.")
     except RuleDefinitionError as exc:
         typer.echo(f"Error: {exc}")
         raise typer.Exit(code=2)
 
 
 @rules_app.command("validate")
-def rules_validate(
-    path: Path = typer.Option(Path("rules"), "--path", help="Rules file or directory")
-) -> None:
-    """Validate rule catalog."""
+def rules_validate(path: Path = typer.Option(Path("rules"), "--path", help="Rules file or directory")) -> None:
     try:
         catalog, file_count = _load_rule_catalog(path)
         typer.echo("Rule catalog is valid.")
@@ -336,28 +181,15 @@ def rules_validate(
 
 
 @rules_app.command("show")
-def rules_show(
-    rule_id: str,
-    path: Path = typer.Option(Path("rules"), "--path", help="Rules file or directory"),
-) -> None:
-    """Show one rule by ID."""
+def rules_show(rule_id: str, path: Path = typer.Option(Path("rules"), "--path", help="Rules file or directory")) -> None:
     try:
         catalog, _ = _load_rule_catalog(path)
         rule = catalog.get(rule_id)
-        typer.echo(f"id: {rule.id}")
-        typer.echo(f"title: {rule.title}")
-        typer.echo(f"description: {rule.description}")
-        typer.echo(f"category: {rule.category}")
-        typer.echo(f"severity: {rule.severity.name.lower()}")
-        typer.echo(f"version: {rule.version}")
-        typer.echo(f"enabled: {rule.enabled}")
-        typer.echo(f"applicability: {rule.applicability}")
-        typer.echo(f"rationale: {rule.rationale}")
-        typer.echo(f"recommendation: {rule.recommendation}")
-        typer.echo(f"tags: {rule.tags}")
-        typer.echo(f"references: {rule.references}")
-        typer.echo(f"evidence_requirements: {rule.evidence_requirements}")
-        typer.echo(f"metadata: {rule.metadata}")
+        for key in ("id", "title", "description", "category", "severity", "version", "enabled", "applicability", "rationale", "recommendation", "tags", "references", "evidence_requirements", "metadata"):
+            value = getattr(rule, key)
+            if key == "severity":
+                value = value.name.lower()
+            typer.echo(f"{key}: {value}")
     except RuleDefinitionError as exc:
         typer.echo(f"Error: {exc}")
         raise typer.Exit(code=2)
