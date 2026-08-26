@@ -1,5 +1,5 @@
 name: EARF Enterprise AI Readiness Scan
-description: Run EARF against a repository and generate JSON and Markdown readiness reports.
+description: Run EARF against a repository and generate JSON, Markdown, and PDF readiness reports.
 
 inputs:
   path:
@@ -45,12 +45,10 @@ runs:
         set -euo pipefail
         scan_path="${{ inputs.path }}"
         rules_path="${{ inputs['rules-path'] }}"
-
         args=("$scan_path")
         if [[ -n "$rules_path" ]]; then
           args+=(--rules-path "$rules_path")
         fi
-
         earf report "${args[@]}" --format json --output earf-report.json
 
     - name: Generate EARF Markdown report
@@ -59,13 +57,23 @@ runs:
         set -euo pipefail
         scan_path="${{ inputs.path }}"
         rules_path="${{ inputs['rules-path'] }}"
-
         args=("$scan_path")
         if [[ -n "$rules_path" ]]; then
           args+=(--rules-path "$rules_path")
         fi
-
         earf report "${args[@]}" --format markdown --output EARF_REPORT.md
+
+    - name: Generate EARF PDF report
+      shell: bash
+      run: |
+        set -euo pipefail
+        scan_path="${{ inputs.path }}"
+        rules_path="${{ inputs['rules-path'] }}"
+        args=("$scan_path")
+        if [[ -n "$rules_path" ]]; then
+          args+=(--rules-path "$rules_path")
+        fi
+        earf report "${args[@]}" --format pdf --output EARF_REPORT.pdf
 
     - name: Print concise EARF summary
       shell: bash
@@ -80,13 +88,13 @@ runs:
         set -euo pipefail
         python3 - <<'PY'
         import json
-      import os
+        import os
 
         with open("earf-report.json", "r", encoding="utf-8") as handle:
             report = json.load(handle)
 
-      output_path = os.environ["GITHUB_OUTPUT"]
-      with open(output_path, "a", encoding="utf-8") as out:
+        output_path = os.environ["GITHUB_OUTPUT"]
+        with open(output_path, "a", encoding="utf-8") as out:
             out.write(f"overall_score={report.get('overall_score', '')}\n")
             out.write(f"production_status={report.get('production_status', '')}\n")
         PY
