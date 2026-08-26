@@ -36,7 +36,8 @@ classifiers = [
 
 dependencies = [
   "PyYAML>=6.0",
-  "typer>=0.12,<1.0"
+  "typer>=0.12,<1.0",
+  "reportlab>=4.0,<5.0"
 ]
 
 [project.optional-dependencies]
