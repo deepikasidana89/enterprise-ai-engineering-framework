@@ -17,6 +17,14 @@ Current release status: **Early Developer Release** (version `0.7.0`).
 
 > EARF is designed for engineering teams, AI platform teams, reviewers, and technical leaders who need a repeatable way to identify production-readiness gaps before deployment.
 
+## 🚀 Try EARF Online
+
+**No installation required.** Paste a public GitHub repository URL, run an EARF readiness assessment, review the results in the browser, and download a polished PDF report.
+
+👉 **[Launch the EARF AI Readiness Assessment](https://enterprise-ai-engineering-framework-kh89qbptg2r7yjurjjb2rp.streamlit.app/)**
+
+The hosted pilot currently supports **public GitHub repositories only**. For private or internal repositories, run EARF locally unless your organization explicitly approves use of a hosted assessment service.
+
 ## Start here
 
 The fastest way to understand EARF is to run it against one of the example projects in this repository:
