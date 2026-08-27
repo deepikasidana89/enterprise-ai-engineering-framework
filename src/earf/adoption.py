@@ -31,10 +31,9 @@ class AdoptionStoreError(RuntimeError):
 class GitHubAdoptionStore:
     """Persist small adoption-evidence records to a private GitHub repository.
 
-    The hosted EARF app never stores source code or generated PDF reports here.
-    Repository identity is represented by a salted SHA-256 fingerprint so the
-    evidence store can count unique/repeat assessments without retaining the
-    submitted repository URL.
+    The hosted EARF app stores the normalized public GitHub repository URL plus a
+    salted SHA-256 fingerprint for unique/repeat-assessment analytics. Repository
+    source code and generated PDF reports are never stored in the evidence repo.
     """
 
     def __init__(self, config: AdoptionConfig) -> None:
@@ -49,6 +48,10 @@ class GitHubAdoptionStore:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d")
         random_part = secrets.token_hex(4).upper()
         return f"EARF-{timestamp}-{random_part}"
+
+    @staticmethod
+    def normalized_repository_url(owner: str, repo: str) -> str:
+        return f"https://github.com/{owner.strip()}/{repo.strip()}"
 
     def repository_fingerprint(self, owner: str, repo: str) -> str:
         normalized = f"{owner.strip().lower()}/{repo.strip().lower()}"
@@ -72,6 +75,7 @@ class GitHubAdoptionStore:
     ) -> dict[str, Any]:
         now = datetime.now(timezone.utc)
         fingerprint = self.repository_fingerprint(owner, repo)
+        repository_url = self.normalized_repository_url(owner, repo)
         repo_state_path = f"evidence/repositories/{fingerprint}.json"
         repo_state, repo_state_sha = self._read_json(repo_state_path)
 
@@ -80,6 +84,8 @@ class GitHubAdoptionStore:
         repeat_assessment = previous_count > 0
 
         updated_repo_state = {
+            "repository_url": repository_url,
+            "repository_public": True,
             "repository_fingerprint": fingerprint,
             "assessment_count": assessment_count,
             "first_assessed_at": (
@@ -103,6 +109,8 @@ class GitHubAdoptionStore:
         record: dict[str, Any] = {
             "assessment_id": assessment_id,
             "assessed_at": self._timestamp(now),
+            "repository_url": repository_url,
+            "repository_public": True,
             "repository_fingerprint": fingerprint,
             "repeat_assessment": repeat_assessment,
             "repository_assessment_number": assessment_count,
@@ -176,8 +184,6 @@ class GitHubAdoptionStore:
         return f"evidence/assessments/{when:%Y/%m}/{assessment_id}.json"
 
     def _find_assessment_path(self, assessment_id: str) -> str | None:
-        # Assessment IDs contain YYYYMMDD, which lets us address the record
-        # directly without listing or searching the evidence repository.
         parts = assessment_id.split("-")
         if len(parts) < 3 or len(parts[1]) != 8 or not parts[1].isdigit():
             return None
