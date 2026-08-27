@@ -3,12 +3,21 @@ from __future__ import annotations
 import io
 import json
 import re
+import sys
 import tempfile
 import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
 from urllib.parse import quote, urlparse
+
+# Streamlit Community Cloud may have a previously installed EARF package in the
+# environment. Always prefer the source code from the currently checked-out
+# repository so new modules (such as earf.adoption) are available immediately.
+REPO_ROOT = Path(__file__).resolve().parent
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
 
 import streamlit as st
 
