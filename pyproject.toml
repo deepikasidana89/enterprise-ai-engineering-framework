@@ -41,6 +41,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+web = [
+  "streamlit>=1.40,<2.0"
+]
 dev = [
   "build",
   "mypy",
@@ -55,9 +58,9 @@ dev = [
 earf = "earf.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/<your-username>/enterprise-ai-readiness-framework"
-Repository = "https://github.com/<your-username>/enterprise-ai-readiness-framework"
-Issues = "https://github.com/<your-username>/enterprise-ai-readiness-framework/issues"
+Homepage = "https://github.com/deepikasidana89/enterprise-ai-engineering-framework"
+Repository = "https://github.com/deepikasidana89/enterprise-ai-engineering-framework"
+Issues = "https://github.com/deepikasidana89/enterprise-ai-engineering-framework/issues"
 
 [tool.setuptools.package-data]
 earf = [
