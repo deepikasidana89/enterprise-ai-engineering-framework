@@ -178,7 +178,7 @@ def get_adoption_store() -> GitHubAdoptionStore | None:
 
 def render_optional_profile() -> dict[str, str]:
     with st.expander("Want to tell us about yourself? (Optional)", expanded=False):
-        st.caption("You can use EARF anonymously. Sharing this is completely optional and helps us understand the engineering communities using EARF.")
+        st.caption("You can use EARF without sharing personal information. Sharing this is completely optional and helps us understand the engineering communities using EARF.")
         col1, col2 = st.columns(2)
         name = col1.text_input("Name (optional)", key="profile_name")
         role = col2.text_input("Role (optional)", key="profile_role")
@@ -267,11 +267,11 @@ def main() -> None:
         </style>
         <div class="earf-hero"><h1>EARF AI Readiness Assessment</h1><p>Paste a public GitHub repository and receive an evidence-based engineering readiness assessment with a downloadable PDF report.</p></div>
         """, unsafe_allow_html=True)
-    st.info("Hosted pilot: public GitHub repositories only. EARF downloads a temporary snapshot for the assessment and does not intentionally retain the repository or generated PDF after processing.")
+    st.info("Hosted pilot: public GitHub repositories only. EARF downloads a temporary snapshot for the assessment. Repository source code and generated PDF reports are not retained after processing.")
     repo_url = st.text_input("GitHub repository URL", placeholder="https://github.com/owner/repository", help="Use the repository root URL. Private repositories are not supported by the hosted pilot.")
     authorized = st.checkbox("I confirm that I am authorized to submit this repository for assessment.")
     profile = render_optional_profile()
-    st.caption("Privacy: anonymous usage evidence may record an assessment ID, timestamp, salted repository fingerprint, repeat-assessment indicator, EARF version, assessment completion, PDF download, and optional feedback. Repository source code and generated PDF reports are not retained. Identity fields above are optional.")
+    st.caption("Privacy: EARF records the submitted public GitHub repository URL, assessment ID, timestamp, repository fingerprint, repeat-assessment indicator, EARF version, assessment metrics, completion, PDF-download activity, and optional feedback to understand framework adoption and improve EARF. Repository source code and generated PDF reports are not retained. Personal information is collected only if you voluntarily provide it above.")
     submitted = st.button("Generate readiness assessment", type="primary", use_container_width=True, disabled=not authorized)
 
     store = get_adoption_store()
@@ -296,7 +296,7 @@ def main() -> None:
                         optional_profile=profile,
                     )
                 except AdoptionStoreError:
-                    st.warning("The assessment completed, but anonymous adoption evidence could not be saved. Your report is still available below.")
+                    st.warning("The assessment completed, but adoption evidence could not be saved. Your report is still available below.")
             st.session_state["latest_result"] = (report, pdf_bytes, owner, repo, assessment_id)
         except RepositoryInputError as exc:
             st.error(str(exc))
