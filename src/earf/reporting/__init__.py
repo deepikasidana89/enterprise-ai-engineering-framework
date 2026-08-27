@@ -4,6 +4,7 @@ from .console import ConsoleReporter
 from .json_reporter import JsonReporter
 from .markdown_reporter import MarkdownReporter
 from .models import ReadinessReport
+from .pdf_reporter import PdfReporter
 from .writer import ReportWriter
 
 __all__ = [
@@ -11,6 +12,7 @@ __all__ = [
 	"ConsoleReporter",
 	"JsonReporter",
 	"MarkdownReporter",
+	"PdfReporter",
 	"ReadinessReport",
 	"ReportBuilder",
 	"ReportWriter",
