@@ -30,7 +30,13 @@ python -m pip install -e .
 earf report examples/not-ready-ai-project --format markdown --output EARF_REPORT.md
 ```
 
-Open `EARF_REPORT.md` to review the findings, evidence, scores, and recommendations. You can then run the same command against your own AI repository.
+Open `EARF_REPORT.md` to review the findings, evidence, scores, and recommendations. For a polished, shareable assessment, generate the PDF version:
+
+```bash
+earf report examples/not-ready-ai-project --format pdf --output EARF_REPORT.pdf
+```
+
+You can then run the same commands against your own AI repository.
 
 ### Sample assessment
 
@@ -57,7 +63,7 @@ EARF analyzes evidence available in an AI application's repository and helps tea
 * 📊 **Score** overall and category-level readiness
 * 🚨 **Identify** critical and high-severity gaps
 * 🛡️ **Evaluate** reliability, safety, security, governance, and operational controls
-* 📋 **Generate** console, JSON, and Markdown readiness reports
+* 📋 **Generate** console, JSON, Markdown, and polished PDF readiness reports
 * 🧭 **Prioritize** engineering improvements before production
 
 The goal is not to certify an AI system.
@@ -164,8 +170,9 @@ jobs:
 
 The action generates:
 
-- `earf-report.json`
-- `EARF_REPORT.md`
+- `earf-report.json` for automation and machine-readable results
+- `EARF_REPORT.md` for repository-native review
+- `EARF_REPORT.pdf` for polished stakeholder and pilot sharing
 
 Use the GitHub Action to assess changes on every pull request and push. For stricter enforcement, set `fail-on-not-ready: true` after calibrating the rules for your repository.
 
@@ -215,10 +222,21 @@ earf report . --format markdown --output EARF_REPORT.md
 python -m earf report . --format markdown --output EARF_REPORT.md
 ```
 
+PDF report:
+
+```bash
+earf report . --format pdf --output EARF_REPORT.pdf
+# or
+python -m earf report . --format pdf --output EARF_REPORT.pdf
+```
+
+The PDF uses the same readiness analysis as the other report formats and presents it as a shareable engineering assessment with an executive dashboard, production status, category scores, prioritized findings, recommended next actions, passed controls, and interpretation guidance. See [PDF readiness reports](docs/pdf-reports.md) for details.
+
 Default report filenames:
 
 - JSON: `earf-report.json`
 - Markdown: `EARF_REPORT.md`
+- PDF: `EARF_REPORT.pdf`
 
 Console example:
 
