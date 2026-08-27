@@ -11,9 +11,6 @@ import zipfile
 from pathlib import Path
 from urllib.parse import quote, urlparse
 
-# Streamlit Community Cloud may have a previously installed EARF package in the
-# environment. Always prefer the source code from the currently checked-out
-# repository so new modules (such as earf.adoption) are available immediately.
 REPO_ROOT = Path(__file__).resolve().parent
 SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
@@ -25,7 +22,6 @@ from earf.__about__ import __version__
 from earf.adoption import AdoptionConfig, AdoptionStoreError, GitHubAdoptionStore
 from earf.pipeline import EARFPipeline
 from earf.reporting import PdfReporter
-
 
 MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
 MAX_EXTRACTED_BYTES = 150 * 1024 * 1024
@@ -112,6 +108,7 @@ def download_repository_zip(owner: str, repo: str, branch: str, destination: Pat
         raise RepositoryInputError(f"GitHub could not provide the repository archive (HTTP {exc.code}).") from exc
     except urllib.error.URLError as exc:
         raise RepositoryInputError("The repository archive could not be downloaded.") from exc
+
     archive.seek(0)
     try:
         with zipfile.ZipFile(archive) as zip_file:
@@ -129,6 +126,7 @@ def download_repository_zip(owner: str, repo: str, branch: str, destination: Pat
             zip_file.extractall(destination)
     except zipfile.BadZipFile as exc:
         raise RepositoryInputError("GitHub returned an invalid repository archive.") from exc
+
     roots = [path for path in destination.iterdir() if path.is_dir()]
     if len(roots) != 1:
         raise RepositoryInputError("The downloaded repository archive has an unexpected structure.")
@@ -183,8 +181,42 @@ def render_optional_profile() -> dict[str, str]:
         name = col1.text_input("Name (optional)", key="profile_name")
         role = col2.text_input("Role (optional)", key="profile_role")
         organization = col1.text_input("Organization / university (optional)", key="profile_org")
-        email = col2.text_input("Email (optional)", key="profile_email", help="Only share this if you are open to follow-up about EARF.")
+        email = col2.text_input(
+            "Email (optional)",
+            key="profile_email",
+            help="Share only if you are open to being contacted about EARF research, feedback, or future pilot opportunities.",
+        )
     return {"name": name, "role": role, "organization": organization, "email": email}
+
+
+def render_privacy_details() -> None:
+    with st.expander("Privacy & Pilot Data", expanded=False):
+        st.markdown(
+            """
+**What EARF retains**
+- The submitted **public GitHub repository URL**.
+- A unique assessment ID and timestamp.
+- A repository fingerprint used for unique/repeat-assessment counting.
+- EARF version and assessment metrics.
+- Assessment completion and PDF-download activity.
+- Optional feedback you choose to submit.
+- Optional name, role, organization/university, and email only if you provide them.
+
+**What EARF does not retain**
+- Repository source code after the assessment finishes.
+- The generated PDF report after processing.
+- Credentials, private repository contents, or private GitHub access.
+
+**Why this data is retained**
+The retained metadata is used to understand EARF adoption, measure repeat usage, improve the framework, and document pilot outcomes.
+
+**Storage**
+Pilot evidence is stored in a private evidence repository rather than in the public EARF repository.
+
+**Removal requests**
+If you voluntarily share personal information or want an assessment record removed, contact the EARF maintainer and provide the assessment ID shown after your assessment.
+"""
+        )
 
 
 def render_feedback(assessment_id: str, store: GitHubAdoptionStore | None) -> None:
@@ -228,13 +260,21 @@ def render_report(report: object, pdf_bytes: bytes, owner: str, repo: str, asses
     col2.metric("Advanced controls", f"{score.advanced_controls_score:.1f}/100")
     col3.metric("Automated coverage", f"{coverage.percentage:.1f}%")
     st.markdown(f"### {_status_icon(status)} Production status: `{status}`")
+
     category_rows: list[dict[str, object]] = []
     for category, detail in sorted(score.category_details.items()):
         tracked = detail.passed_rules + detail.failed_rules + detail.manual_review_rules + detail.needs_semantic_review_rules + detail.not_applicable_rules + detail.disabled_rules + detail.error_rules
-        category_rows.append({"Category": category.replace("_", " ").title(), "Score": round(detail.score, 1) if detail.score is not None else None, "Passed": detail.passed_rules, "Failed": detail.failed_rules, "Coverage": f"{detail.passed_rules + detail.failed_rules}/{tracked}"})
+        category_rows.append({
+            "Category": category.replace("_", " ").title(),
+            "Score": round(detail.score, 1) if detail.score is not None else None,
+            "Passed": detail.passed_rules,
+            "Failed": detail.failed_rules,
+            "Coverage": f"{detail.passed_rules + detail.failed_rules}/{tracked}",
+        })
     if category_rows:
         st.markdown("#### Category scores")
         st.dataframe(category_rows, use_container_width=True, hide_index=True)
+
     core_gaps = list(report.metadata.get("core_gaps", []))
     if core_gaps:
         st.markdown("#### Priority findings")
@@ -245,20 +285,30 @@ def render_report(report: object, pdf_bytes: bytes, owner: str, repo: str, asses
             recommendation = str(finding.get("recommendation", "")).strip()
             with st.expander(f"{severity} · {rule_id} · {title}"):
                 st.write(recommendation or "Review this finding with the responsible engineering team.")
-    downloaded = st.download_button("Download full PDF report", data=pdf_bytes, file_name=f"EARF_REPORT_{repo}.pdf", mime="application/pdf", type="primary", use_container_width=True)
+
+    downloaded = st.download_button(
+        "Download full PDF report",
+        data=pdf_bytes,
+        file_name=f"EARF_REPORT_{repo}.pdf",
+        mime="application/pdf",
+        type="primary",
+        use_container_width=True,
+    )
     if downloaded and store is not None and not st.session_state.get(f"download-recorded-{assessment_id}"):
         try:
             store.record_pdf_download(assessment_id)
             st.session_state[f"download-recorded-{assessment_id}"] = True
         except AdoptionStoreError:
             pass
+
     st.caption("EARF reports repository evidence, not certification. Validate important findings with the responsible engineers and combine them with runtime and operational evidence.")
     render_feedback(assessment_id, store)
 
 
 def main() -> None:
     st.set_page_config(page_title="EARF AI Readiness Assessment", page_icon="🧭", layout="wide", initial_sidebar_state="collapsed")
-    st.markdown("""
+    st.markdown(
+        """
         <style>
         .block-container {max-width: 1000px; padding-top: 2.5rem; padding-bottom: 3rem;}
         .earf-hero {padding: 1.4rem 1.6rem; border: 1px solid #dbe4ec; border-radius: 18px; background: #f7fafc; margin-bottom: 1.2rem;}
@@ -266,15 +316,26 @@ def main() -> None:
         .earf-hero p {margin: 0; color: #536273; font-size: 1.02rem;}
         </style>
         <div class="earf-hero"><h1>EARF AI Readiness Assessment</h1><p>Paste a public GitHub repository and receive an evidence-based engineering readiness assessment with a downloadable PDF report.</p></div>
-        """, unsafe_allow_html=True)
-    st.info("Hosted pilot: public GitHub repositories only. EARF downloads a temporary snapshot for the assessment. Repository source code and generated PDF reports are not retained after processing.")
-    repo_url = st.text_input("GitHub repository URL", placeholder="https://github.com/owner/repository", help="Use the repository root URL. Private repositories are not supported by the hosted pilot.")
-    authorized = st.checkbox("I confirm that I am authorized to submit this repository for assessment.")
-    profile = render_optional_profile()
-    st.caption("Privacy: EARF records the submitted public GitHub repository URL, assessment ID, timestamp, repository fingerprint, repeat-assessment indicator, EARF version, assessment metrics, completion, PDF-download activity, and optional feedback to understand framework adoption and improve EARF. Repository source code and generated PDF reports are not retained. Personal information is collected only if you voluntarily provide it above.")
-    submitted = st.button("Generate readiness assessment", type="primary", use_container_width=True, disabled=not authorized)
+        """,
+        unsafe_allow_html=True,
+    )
 
+    st.info("Hosted pilot: public GitHub repositories only. EARF downloads a temporary snapshot for the assessment. Repository source code and generated PDF reports are not retained after processing.")
+    repo_url = st.text_input(
+        "GitHub repository URL",
+        placeholder="https://github.com/owner/repository",
+        help="Use the repository root URL. Private repositories are not supported by the hosted pilot.",
+    )
+    authorized = st.checkbox(
+        "I confirm that I am authorized to submit this public repository for assessment and understand that EARF will retain the public repository URL and assessment metadata for adoption measurement and framework improvement."
+    )
+    profile = render_optional_profile()
+    st.caption("Privacy: EARF retains the submitted public GitHub repository URL and limited assessment/adoption metadata. Repository source code and generated PDF reports are not retained. Personal information is collected only if you voluntarily provide it.")
+    render_privacy_details()
+
+    submitted = st.button("Generate readiness assessment", type="primary", use_container_width=True, disabled=not authorized)
     store = get_adoption_store()
+
     if submitted:
         try:
             owner, repo = parse_github_repository(repo_url)
